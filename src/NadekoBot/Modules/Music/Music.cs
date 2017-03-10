@@ -51,7 +51,7 @@ namespace NadekoBot.Modules.Music
             //{
 
             if (usr.Id == NadekoBot.Client.CurrentUser.Id) 
-                player.PlaybackVoiceChannel == oldState.VoiceChannel;
+                player.PlaybackVoiceChannel == newState.VoiceChannel;
             
             if (player.PlaybackVoiceChannel == null)
                 return Task.CompletedTask;
