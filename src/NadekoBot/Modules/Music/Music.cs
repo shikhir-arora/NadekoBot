@@ -59,19 +59,19 @@ namespace NadekoBot.Modules.Music
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
                         int time = 0; // currentSong.CurrentTime 
+                        Thread.Sleep(200);
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
                         //player.Next();
-                        Thread.Sleep(100);
                         player.TogglePause();
                    } else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
                         int time = 0; // currentSong.CurrentTime 
+                        Thread.Sleep(200);
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
                         //player.Next();
-                        Thread.Sleep(200);
                         player.TogglePause();
                     }
                     return Task.CompletedTask;
@@ -86,13 +86,13 @@ namespace NadekoBot.Modules.Music
                         !player.Paused &&
                         oldState.VoiceChannel.Users.Count == 1))
                 {
-                       /** var currentSong = player.CurrentSong;
+                        var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
-                        int time = 0;
+                        int time = 0; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
-                        player.AddSong(refresh, 0);
-                        //player.Next();  **/
                         Thread.Sleep(100);
+                        player.AddSong(refresh, 0);
+                        //player.Next(); 
                         player.TogglePause();
                         return Task.CompletedTask; 
                 }
