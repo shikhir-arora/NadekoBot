@@ -58,22 +58,23 @@ namespace NadekoBot.Modules.Music
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
-                        int time = 0; // currentSong.CurrentTime 
+                        int time = 1; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
-                        player.TogglePause();
                         player.AddSong(refresh, 0);
                         Thread.Sleep(200);
+                        player.TogglePause();           
                         //player.Next();
                  }     
                     else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
-                        int time = 0; // currentSong.CurrentTime 
+                        int time = 1; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
-                        player.TogglePause();
                         player.AddSong(refresh, 0);
                         Thread.Sleep(200);
+                        player.TogglePause();           
                         //player.Next();
+                       
                     }
                     return Task.CompletedTask;
                 }
@@ -89,11 +90,11 @@ namespace NadekoBot.Modules.Music
                 { 
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
-                        int time = 0; // currentSong.CurrentTime 
+                        int time = 1; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
-                        player.TogglePause();
                         player.AddSong(refresh, 0);
                         Thread.Sleep(800);
+                        player.TogglePause();           
                         //player.Next();
                         return Task.CompletedTask;
                 }  
