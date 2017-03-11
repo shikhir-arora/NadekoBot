@@ -1,4 +1,4 @@
-﻿using Discord.Commands;
+using Discord.Commands;
 using NadekoBot.Modules.Music.Classes;
 using System.Collections.Concurrent;
 using Discord.WebSocket;
@@ -47,40 +47,60 @@ namespace NadekoBot.Modules.Music
             if (!MusicPlayers.TryGetValue(usr.Guild.Id, out player))
                 return Task.CompletedTask;
 
-            //try
-            //{
+            try
+            {
 
-            if (usr.Id == NadekoBot.Client.CurrentUser.Id) 
-                player.PlaybackVoiceChannel == newState.VoiceChannel;
-            
-            if (player.PlaybackVoiceChannel == null)
-                return Task.CompletedTask;
-            
-            if (player.PlaybackVoiceChannel.Users.Count < 2) {
-                if (!player.Paused) {
-                    player.TogglePause();
+
+                //if bot moved
+                if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &&
+                        usr.Id == NadekoBot.Client.CurrentUser.Id)
+                {
+                    if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
+                        var currentSong = player.CurrentSong;
+                        var refresh = currentSong.Clone();
+                        refresh.SkipTo = 15;
+                        player.AddSong(refresh, 0);
+                        player.Next();
+                        Thread.Sleep(100);
+                        player.TogglePause();
+                   } else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
+                        var currentSong = player.CurrentSong;
+                        var refresh = currentSong.Clone();
+                        refresh.SkipTo = 15;
+                        player.AddSong(refresh, 0);
+                        player.Next();
+                        Thread.Sleep(100);
+                        player.TogglePause();
+                    }
+                    return Task.CompletedTask;
                 }
-            }
-            
-            else {
-                if (player.Paused) {
-                    player.TogglePause();
+
+
+                //if some other user moved
+                if ((player.PlaybackVoiceChannel == newState.VoiceChannel && //if joined first, and player paused, unpause 
+                        player.Paused &&
+                        newState.VoiceChannel.Users.Count == 2) ||  // keep in mind bot is in the channel (+1)
+                    (player.PlaybackVoiceChannel == oldState.VoiceChannel && // if left last, and player unpaused, pause
+                        !player.Paused &&
+                        oldState.VoiceChannel.Users.Count == 1))
+                {
+                        var currentSong = player.CurrentSong;
+                        var refresh = currentSong.Clone();
+                        refresh.SkipTo = 15;
+                        player.AddSong(refresh, 0);
+                        player.Next();
+                        Thread.Sleep(100);
+                        player.TogglePause();
+                        return Task.CompletedTask;
                 }
+
             }
-            
-            return Task.CompletedTask;
-            
-        }
-
-
-
-            //}
-            //catch
-            //{
+            catch
+            {
                 // ignored
-            //}
-           // return Task.CompletedTask;
-       // }
+            }
+            return Task.CompletedTask;
+        }
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
@@ -718,7 +738,7 @@ namespace NadekoBot.Modules.Music
             var embed = new EmbedBuilder()
                 .WithAuthor(eab => eab.WithName(GetText("playlists_page", num)).WithMusicIcon())
                 .WithDescription(string.Join("\n", playlists.Select(r =>
-                    GetText("playlists", "#" + r.Id, r.Name, r.Author, r.Songs.Count))))
+                    GetText("playlists", r.Id, r.Name, r.Author, r.Songs.Count))))
                 .WithOkColor();
             await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
 
