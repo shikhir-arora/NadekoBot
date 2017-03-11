@@ -494,16 +494,16 @@ namespace NadekoBot.Modules.Music
         }
 
         //[NadekoCommand, Usage, Description, Aliases]
-        //[RequireContext(ContextType.Guild)]
-        //public async Task Move()
-        //{
+        [RequireContext(ContextType.Guild)]
+        public async Task Move()
+        {
 
-        //    MusicPlayer musicPlayer;
-        //    var voiceChannel = ((IGuildUser)Context.User).VoiceChannel;
-        //    if (voiceChannel == null || voiceChannel.Guild != Context.Guild || !MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
-        //        return;
-        //    await musicPlayer.MoveToVoiceChannel(voiceChannel);
-        //}
+            MusicPlayer musicPlayer;
+            var voiceChannel = ((IGuildUser)Context.User).VoiceChannel;
+            if (voiceChannel == null || voiceChannel.Guild != Context.Guild || !MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
+                return;
+            await musicPlayer.MoveToVoiceChannel(voiceChannel);
+        }
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
