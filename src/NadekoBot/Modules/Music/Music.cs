@@ -61,8 +61,8 @@ namespace NadekoBot.Modules.Music
                         int time = 1; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
+                        player.TogglePause();
                         Thread.Sleep(200);
-                        player.TogglePause();           
                         //player.Next();
                  }     
                     else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
@@ -71,21 +71,21 @@ namespace NadekoBot.Modules.Music
                         int time = 1; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
+                        player.TogglePause();
                         Thread.Sleep(200);
-                        player.TogglePause();           
                         //player.Next();
                        
                     }
                     return Task.CompletedTask;
                 }
 
-
-                //if some other user moved
-                if ((player.PlaybackVoiceChannel == newState.VoiceChannel && //if joined first, and player paused, unpause 
-                        player.Paused &&
+                // sections done slightly differently
+                // if some other user moved
+                if ((player.PlaybackVoiceChannel == newState.VoiceChannel & //if joined first, and player paused, unpause 
+                        player.Paused &
                         newState.VoiceChannel.Users.Count == 2) ||  // keep in mind bot is in the channel (+1)
-                    (player.PlaybackVoiceChannel == oldState.VoiceChannel && // if left last, and player unpaused, pause
-                        !player.Paused &&
+                    (player.PlaybackVoiceChannel == oldState.VoiceChannel & // if left last, and player unpaused, pause
+                        !player.Paused &
                         oldState.VoiceChannel.Users.Count == 1))
                 { 
                         var currentSong = player.CurrentSong;
@@ -93,9 +93,9 @@ namespace NadekoBot.Modules.Music
                         int time = 1; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
-                        Thread.Sleep(800);
+                        player.Next();
                         player.TogglePause();           
-                        //player.Next();
+                        Thread.Sleep(1000); 
                         return Task.CompletedTask;
                 }  
              }  
