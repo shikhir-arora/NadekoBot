@@ -58,7 +58,7 @@ namespace NadekoBot.Modules.Music
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
-                        int time = (int)currentSong.CurrentTime;
+                        int time = 0; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
                         //player.Next();
@@ -67,7 +67,7 @@ namespace NadekoBot.Modules.Music
                    } else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
-                        int time = (int)currentSong.CurrentTime;
+                        int time = 0; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
                         //player.Next();
@@ -86,15 +86,15 @@ namespace NadekoBot.Modules.Music
                         !player.Paused &&
                         oldState.VoiceChannel.Users.Count == 1))
                 {
-                        var currentSong = player.CurrentSong;
+                       /** var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
-                        int time = (int)currentSong.CurrentTime;
+                        int time = 0;
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
-                        //player.Next();
+                        //player.Next();  **/
                         Thread.Sleep(100);
                         player.TogglePause();
-                        return Task.CompletedTask;
+                        return Task.CompletedTask; 
                 }
 
             }
