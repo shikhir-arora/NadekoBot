@@ -60,7 +60,7 @@ namespace NadekoBot.Modules.Music
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
                         var currentSong = player.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
-                        var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime ?? 0, formats, CultureInfo.InvariantCulture).TotalSeconds;
                         int time = (int) duration; 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
@@ -72,7 +72,7 @@ namespace NadekoBot.Modules.Music
                     else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         var currentSong = player.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
-                        var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime ?? 0, formats, CultureInfo.InvariantCulture).TotalSeconds;
                         int time = (int) duration; 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
@@ -98,7 +98,7 @@ namespace NadekoBot.Modules.Music
                 { 
                         var currentSong = player.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
-                        var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime ?? 0, formats, CultureInfo.InvariantCulture).TotalSeconds;
                         int time = (int) duration; 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
