@@ -40,7 +40,7 @@ namespace NadekoBot.Modules.Music
         private static Task Client_UserVoiceStateUpdated(SocketUser iusr, SocketVoiceState oldState, SocketVoiceState newState)
         {
             var usr = iusr as SocketGuildUser;
-            if (usr == null ||
+            if (usr == null |
                 oldState.VoiceChannel == newState.VoiceChannel)
                 return Task.CompletedTask;
 
@@ -91,10 +91,10 @@ namespace NadekoBot.Modules.Music
                 // if some other user moved
                 if ((player.PlaybackVoiceChannel == newState.VoiceChannel & //if joined first, and player paused, unpause 
                         player.Paused &
-                        newState.VoiceChannel.Users.Count == 2) ||  // keep in mind bot is in the channel (+1)
+                        newState.VoiceChannel.Users.Count == 2) |  // keep in mind bot is in the channel (+1)
                     (player.PlaybackVoiceChannel == oldState.VoiceChannel & // if left last, and player unpaused, pause
                         !player.Paused &
-                        oldState.VoiceChannel.Users.Count == 1))
+                        oldState.VoiceChannel.Users.Count < 2))
                 { 
                         var currentSong = player.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
