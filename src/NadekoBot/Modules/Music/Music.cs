@@ -51,34 +51,34 @@ namespace NadekoBot.Modules.Music
             try
             {
 
-             string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss" }; 
+             string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss" }; // covers all our formats 
              
                 //if bot moved
                 if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &
                         usr.Id == NadekoBot.Client.CurrentUser.Id)
                 {
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
-                        var currentSong = player.CurrentSong ?? return;
+                        var currentSong = player.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
                         var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                        int time = (int) duration; // currentSong.CurrentTime 
+                        int time = (int) duration; 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
-                        Thread.Sleep(200);
                         player.TogglePause();
-                        player.RemoveSongAt(0);
+                        Thread.Sleep(200);
+                        player.RemoveSongAt(1); // we remove at index one for this case only
                       
                  }     
                     else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
-                        var currentSong = player.CurrentSong ?? return;
+                        var currentSong = player.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
                         var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                        int time = (int) duration; // currentSong.CurrentTime 
+                        int time = (int) duration; 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
-                        Thread.Sleep(200);
+                        Thread.Sleep(300);
                         player.TogglePause();
-                        player.RemoveSongAt(0);
+                        player.RemoveSongAt(0); 
                       
                         
                         
@@ -87,7 +87,7 @@ namespace NadekoBot.Modules.Music
                     return Task.CompletedTask;
                 }
 
-                // sections done slightly differently
+                // the above part is structured a bit differently than last part of our if condition
                 // if some other user moved
                 if ((player.PlaybackVoiceChannel == newState.VoiceChannel & //if joined first, and player paused, unpause 
                         player.Paused &
@@ -96,10 +96,10 @@ namespace NadekoBot.Modules.Music
                         !player.Paused &
                         oldState.VoiceChannel.Users.Count == 1))
                 { 
-                        var currentSong = player.CurrentSong ?? return;
+                        var currentSong = player.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
                         var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                        int time = (int) duration; // currentSong.CurrentTime 
+                        int time = (int) duration; 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
                         player.TogglePause(); 
@@ -110,7 +110,8 @@ namespace NadekoBot.Modules.Music
                 }  
              }  
             catch { 
-                     } // ignored
+                  
+                  } // ignored
                      
            return Task.CompletedTask;
         }
