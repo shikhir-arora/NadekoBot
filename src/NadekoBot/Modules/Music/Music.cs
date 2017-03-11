@@ -58,7 +58,7 @@ namespace NadekoBot.Modules.Music
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
-                        refresh.SkipTo = 15;
+                        refresh.SkipTo = 0;
                         player.AddSong(refresh, 0);
                         player.Next();
                         Thread.Sleep(100);
@@ -66,10 +66,11 @@ namespace NadekoBot.Modules.Music
                    } else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
-                        refresh.SkipTo = 15;
+                        refresh.SkipTo = 0;
+                        player.Stop();
                         player.AddSong(refresh, 0);
                         player.Next();
-                        Thread.Sleep(100);
+                        Thread.Sleep(200);
                         player.TogglePause();
                     }
                     return Task.CompletedTask;
@@ -86,7 +87,8 @@ namespace NadekoBot.Modules.Music
                 {
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
-                        refresh.SkipTo = 15;
+                        refresh.SkipTo = 0;
+                        player.Stop();
                         player.AddSong(refresh, 0);
                         player.Next();
                         Thread.Sleep(100);
