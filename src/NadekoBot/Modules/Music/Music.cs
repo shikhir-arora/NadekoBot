@@ -5,6 +5,7 @@ using Discord.WebSocket;
 using NadekoBot.Services;
 using System.IO;
 using Discord;
+using System.Globalization;
 using System.Threading.Tasks;
 using NadekoBot.Attributes;
 using System;
@@ -59,25 +60,26 @@ namespace NadekoBot.Modules.Music
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
                         var currentSong = player.CurrentSong ?? return;
                         var refresh = currentSong.Clone();
-                        duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
                         int time = (int) duration; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
-                        Thread.Sleep(300);
-                        player.RemoveSongAt(1);
+                        Thread.Sleep(200);
                         player.TogglePause();
+                        player.RemoveSongAt(0);
                       
                  }     
                     else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         var currentSong = player.CurrentSong ?? return;
                         var refresh = currentSong.Clone();
-                        duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
                         int time = (int) duration; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
-                        Thread.Sleep(300);
-                        player.RemoveSongAt(1);
+                        Thread.Sleep(200);
                         player.TogglePause();
+                        player.RemoveSongAt(0);
+                      
                         
                         
                        
@@ -96,13 +98,13 @@ namespace NadekoBot.Modules.Music
                 { 
                         var currentSong = player.CurrentSong ?? return;
                         var refresh = currentSong.Clone();
-                        duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        var duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
                         int time = (int) duration; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
-                        Thread.Sleep(300);
-                        player.RemoveSongAt(1);
-                        player.TogglePause();           
+                        player.TogglePause(); 
+                        Thread.Sleep(200);
+                        player.RemoveSongAt(0);     
                         return Task.CompletedTask;
                         // Thread.Sleep(500);
                 }  
