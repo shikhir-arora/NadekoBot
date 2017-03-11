@@ -52,27 +52,28 @@ namespace NadekoBot.Modules.Music
 
 
                 //if bot moved
-                if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &&
+                if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &
                         usr.Id == NadekoBot.Client.CurrentUser.Id)
                 {
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
                         int time = 0; // currentSong.CurrentTime 
-                        Thread.Sleep(200);
                         refresh.SkipTo = time;
-                        player.AddSong(refresh, 0);
-                        //player.Next();
                         player.TogglePause();
+                        player.AddSong(refresh, 0);
+                        Thread.Sleep(200);
+                        //player.Next();
+                        
                    } else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
                         int time = 0; // currentSong.CurrentTime 
-                        Thread.Sleep(200);
                         refresh.SkipTo = time;
-                        player.AddSong(refresh, 0);
-                        //player.Next();
                         player.TogglePause();
+                        player.AddSong(refresh, 0);
+                        Thread.Sleep(200);
+                        //player.Next();
                     }
                     return Task.CompletedTask;
                 }
@@ -85,19 +86,17 @@ namespace NadekoBot.Modules.Music
                     (player.PlaybackVoiceChannel == oldState.VoiceChannel && // if left last, and player unpaused, pause
                         !player.Paused &&
                         oldState.VoiceChannel.Users.Count == 1))
-                {
+                { 
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
                         int time = 0; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
-                        Thread.Sleep(100);
-                        player.AddSong(refresh, 0);
-                        //player.Next(); 
                         player.TogglePause();
-                        return Task.CompletedTask; 
-                }
+                        player.AddSong(refresh, 0);
+                        Thread.Sleep(800);
+                        //player.Next();
 
-            }
+                }
             catch
             {
                 // ignored
