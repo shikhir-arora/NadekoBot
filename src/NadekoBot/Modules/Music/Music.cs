@@ -64,8 +64,8 @@ namespace NadekoBot.Modules.Music
                         player.AddSong(refresh, 0);
                         Thread.Sleep(200);
                         //player.Next();
-                        
-                   } else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
+                 }     
+                    else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
                         int time = 0; // currentSong.CurrentTime 
@@ -95,13 +95,12 @@ namespace NadekoBot.Modules.Music
                         player.AddSong(refresh, 0);
                         Thread.Sleep(800);
                         //player.Next();
-
-                }
-            catch
-            {
-                // ignored
-            }
-            return Task.CompletedTask;
+                        return Task.CompletedTask;
+                }  
+             }  
+            catch { 
+                     } // ignored
+          
         }
 
         [NadekoCommand, Usage, Description, Aliases]
