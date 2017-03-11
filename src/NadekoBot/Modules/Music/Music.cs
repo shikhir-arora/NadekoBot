@@ -100,7 +100,8 @@ namespace NadekoBot.Modules.Music
              }  
             catch { 
                      } // ignored
-          
+                     
+           return Task.CompletedTask;
         }
 
         [NadekoCommand, Usage, Description, Aliases]
