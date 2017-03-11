@@ -50,30 +50,36 @@ namespace NadekoBot.Modules.Music
             try
             {
 
-
+             string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss" }; 
+             
                 //if bot moved
                 if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &
                         usr.Id == NadekoBot.Client.CurrentUser.Id)
                 {
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
-                        var currentSong = player.CurrentSong;
+                        var currentSong = player.CurrentSong ?? return;
                         var refresh = currentSong.Clone();
-                        int time = 1; // currentSong.CurrentTime 
+                        duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        int time = (int) duration; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
+                        Thread.Sleep(300);
+                        player.RemoveSongAt(1);
                         player.TogglePause();
-                        Thread.Sleep(200);
-                        //player.Next();
+                      
                  }     
                     else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
-                        var currentSong = player.CurrentSong;
+                        var currentSong = player.CurrentSong ?? return;
                         var refresh = currentSong.Clone();
-                        int time = 1; // currentSong.CurrentTime 
+                        duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        int time = (int) duration; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
+                        Thread.Sleep(300);
+                        player.RemoveSongAt(1);
                         player.TogglePause();
-                        Thread.Sleep(200);
-                        //player.Next();
+                        
+                        
                        
                     }
                     return Task.CompletedTask;
@@ -88,15 +94,17 @@ namespace NadekoBot.Modules.Music
                         !player.Paused &
                         oldState.VoiceChannel.Users.Count == 1))
                 { 
-                        var currentSong = player.CurrentSong;
+                        var currentSong = player.CurrentSong ?? return;
                         var refresh = currentSong.Clone();
-                        int time = 1; // currentSong.CurrentTime 
+                        duration = TimeSpan.ParseExact(currentSong.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        int time = (int) duration; // currentSong.CurrentTime 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
-                        player.Next();
+                        Thread.Sleep(300);
+                        player.RemoveSongAt(1);
                         player.TogglePause();           
-                        Thread.Sleep(1000); 
                         return Task.CompletedTask;
+                        // Thread.Sleep(500);
                 }  
              }  
             catch { 
