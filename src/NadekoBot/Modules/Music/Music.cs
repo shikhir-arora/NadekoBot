@@ -67,7 +67,6 @@ namespace NadekoBot.Modules.Music
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
                         refresh.SkipTo = 0;
-                        player.Stop();
                         player.AddSong(refresh, 0);
                         player.Next();
                         Thread.Sleep(200);
@@ -88,7 +87,6 @@ namespace NadekoBot.Modules.Music
                         var currentSong = player.CurrentSong;
                         var refresh = currentSong.Clone();
                         refresh.SkipTo = 0;
-                        player.Stop();
                         player.AddSong(refresh, 0);
                         player.Next();
                         Thread.Sleep(100);
@@ -493,7 +491,7 @@ namespace NadekoBot.Modules.Music
 
         }
 
-        //[NadekoCommand, Usage, Description, Aliases]
+        [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         public async Task Move()
         {
