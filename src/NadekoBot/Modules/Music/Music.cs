@@ -51,64 +51,64 @@ namespace NadekoBot.Modules.Music
             try
             {
 
-              string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss", @"h\:mm", @"hh\:mm" }; // covers all our formats 
+             string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss", @"h\:mm", @"hh\:mm" }; // covers all our formats 
              
-                if ((player.Paused & player.PlaybackVoiceChannel == oldState.VoiceChannel &
-                    usr.Id == NadekoBot.Client.CurrentUser.Id & newState.VoiceChannel.Users.Count > 1) | (player.Paused & player.PlaybackVoiceChannel == newState.VoiceChannel &
-                    newState.VoiceChannel.Users.Count == 2)) // unpause if 1) there are people in the new channel 2) or new user joins previously empty, paused channel
-                { 
-                  var currentSong = player.CurrentSong ?? null;
-                  var refresh = currentSong.Clone();
-                  var currentTime = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                  int time = (int) currentTime; 
-                  refresh.SkipTo = time;
-                  player.AddSong(refresh, 0);
-                  player.TogglePause();
-                  Thread.Sleep(100);
-                  player.RemoveSongAt(1); // we remove at index one for the unpause cases
-                  return Task.CompletedTask;
-                }     
-                    
-                else if ((!player.Paused & player.PlaybackVoiceChannel == oldState.VoiceChannel &
-                    usr.Id == NadekoBot.Client.CurrentUser.Id & newState.VoiceChannel.Users.Count <= 1) | (!player.Paused & player.PlaybackVoiceChannel == oldState.VoiceChannel & 
-                    oldState.VoiceChannel.Users.Count < 2)) // pause if 1) there are no users in the new channel 2) or if left last and player unpaused, our pause cases
-                { 
-                  var currentSong = player.CurrentSong ?? null;
-                  var refresh = currentSong.Clone();
-                  var currentTime = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                  int time = (int) currentTime; 
-                  refresh.SkipTo = time;
-                  player.AddSong(refresh, 0);
-                  player.TogglePause();
-                  Thread.Sleep(100);
-                  player.RemoveSongAt(0); // remove index 0 for pause cases
-                  return Task.CompletedTask;
-                          
+                //if bot moved
+                if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &
+                        usr.Id == NadekoBot.Client.CurrentUser.Id)
+                {
+                    if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
+                        var currentSong = player.CurrentSong ?? null;
+                        var refresh = currentSong.Clone();
+                        var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        int time = (int) currentDuration; 
+                        refresh.SkipTo = time;
+                        player.AddSong(refresh, 0);
+                        player.TogglePause();
+                       // Thread.Sleep(200);
+                        player.RemoveSongAt(0); 
+                      
+                 }     
+                    else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
+                        var currentSong = player.CurrentSong ?? null;
+                        var refresh = currentSong.Clone();
+                        var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        int time = (int) currentDuration; 
+                        refresh.SkipTo = time;
+                        player.AddSong(refresh, 0);
+                        player.TogglePause();
+                      //  Thread.Sleep(300);
+                        player.RemoveSongAt(0); 
+                      
+                        
+                        
+                       
+                    }
+                    return Task.CompletedTask;
                 }
-                   
-               
-                /*
+
+                // the above part is structured a bit differently than last part of our if condition
                 // if some other user moved
                 if ((player.PlaybackVoiceChannel == newState.VoiceChannel & //if joined first, and player paused, unpause 
                         player.Paused &
                         newState.VoiceChannel.Users.Count == 2) |  // keep in mind bot is in the channel (+1)
                     (player.PlaybackVoiceChannel == oldState.VoiceChannel & // if left last, and player unpaused, pause
                         !player.Paused &
-                        oldState.VoiceChannel.Users.Count < 2))
+                        oldState.VoiceChannel.Users.Count == 1))
                 { 
                         var currentSong = player.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
-                        var currentTime = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                        int time = (int) currentTime; 
+                        var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        int time = (int) currentDuration; 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
                         player.TogglePause(); 
-                        Thread.Sleep(100);
+                       // Thread.Sleep(200);
                         player.RemoveSongAt(0);     
                         return Task.CompletedTask;
                         // Thread.Sleep(500);
-                }  **/
-            }  
+                }  
+             }  
             catch { 
                   
                   } // ignored
