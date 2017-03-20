@@ -53,7 +53,8 @@ namespace NadekoBot.Modules.Music
 
              string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss", @"h\:mm", @"hh\:mm" }; // covers all our formats 
              
-                //if bot moved
+                /*
+               
                 if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &
                         usr.Id == NadekoBot.Client.CurrentUser.Id)
                 {
@@ -68,25 +69,28 @@ namespace NadekoBot.Modules.Music
                        // Thread.Sleep(200);
                         //player.RemoveSongAt(0); 
                       
-                 }     
-                    else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
+                 }  */   
+             //       else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         //var currentSong = player.CurrentSong ?? null;
                         //var refresh = currentSong.Clone();
                         //var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
                         //int time = (int) currentDuration; 
                         //refresh.SkipTo = time;
                         //player.AddSong(refresh, 0);
-                        player.TogglePause();
+                 //       player.TogglePause();
                       //  Thread.Sleep(300);
                       //  player.RemoveSongAt(0); 
-                      
+                    
                         
                         
                        
-                    }
-                    return Task.CompletedTask;
-                }
-
+                 //   }
+                  //  return Task.CompletedTask;
+             //   }
+                
+               
+                
+                
                 // the above part is structured a bit differently than last part of our if condition
                 // if some other user moved
                 if ((player.PlaybackVoiceChannel == newState.VoiceChannel & //if joined first, and player paused, unpause 
