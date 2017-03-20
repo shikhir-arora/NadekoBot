@@ -56,9 +56,9 @@ namespace NadekoBot.Modules.Music
                 
                
                 if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &
-                        usr.Id == NadekoBot.Client.CurrentUser.Id)
+                        (usr.Id == NadekoBot.Client.CurrentUser.Id))
                 {
-                    if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
+                    if (player.Paused & newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
                         //var currentSong = player.CurrentSong ?? null;
                         //var refresh = currentSong.Clone();
                         //var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
@@ -70,7 +70,7 @@ namespace NadekoBot.Modules.Music
                         //player.RemoveSongAt(0); 
                       
                  }     
-                   else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
+                   else if (!player.Paused & newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         //var currentSong = player.CurrentSong ?? null;
                         //var refresh = currentSong.Clone();
                         //var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
@@ -517,6 +517,8 @@ namespace NadekoBot.Modules.Music
             var voiceChannel = ((IGuildUser)Context.User).VoiceChannel;
             if (voiceChannel == null || voiceChannel.Guild != Context.Guild || !MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
                 return;
+            if (musicPlayer.Paused)
+                musicPlayer.TogglePause();
             var currentSong = musicPlayer.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
                         var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
