@@ -491,8 +491,7 @@ namespace NadekoBot.Modules.Music
                         int time = (int) currentDuration; 
                         refresh.SkipTo = time;
                         musicPlayer.AddSong(refresh, 0);
-                        musicPlayer.RemoveSongAt(1);               
-                       // musicPlayer.TogglePause();
+                     
                         
             await musicPlayer.MoveToVoiceChannel(voiceChannel);
         }
