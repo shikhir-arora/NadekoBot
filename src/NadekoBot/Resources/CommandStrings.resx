@@ -1597,7 +1597,7 @@
     <value>move mv</value>
   </data>
   <data name="move_desc" xml:space="preserve">
-    <value>Moves the bot to your voice channel. (works only if music is already playing)</value>
+    <value>Moves the bot to your voice channel. Can also be used to refresh the bot's current voice channel with no disruption. Works only if music is already playing or paused.</value>
   </data>
   <data name="move_usage" xml:space="preserve">
     <value>`{0}mv`</value>
