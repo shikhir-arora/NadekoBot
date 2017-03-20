@@ -51,7 +51,7 @@ namespace NadekoBot.Modules.Music
             try
             {
 
-             //string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss", @"h\:mm", @"hh\:mm" }; // covers all our formats 
+             string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss", @"h\:mm", @"hh\:mm" }; // covers all our formats 
              
                 //if bot moved
                 if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &
@@ -96,15 +96,15 @@ namespace NadekoBot.Modules.Music
                         !player.Paused &
                         oldState.VoiceChannel.Users.Count == 1))
                 { 
-                     //   var currentSong = player.CurrentSong ?? null;
-                      //  var refresh = currentSong.Clone();
-                     //   var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                      //  int time = (int) currentDuration; 
-                       // refresh.SkipTo = time;
-                       // player.AddSong(refresh, 0);
+                        var currentSong = player.CurrentSong ?? null;
+                        var refresh = currentSong.Clone();
+                        var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        int time = (int) currentDuration; 
+                        refresh.SkipTo = time;
+                        player.AddSong(refresh, 0);
                         player.TogglePause(); 
-                       // Thread.Sleep(200);
-                      //  player.RemoveSongAt(0);     
+                        //Thread.Sleep(200);
+                        player.RemoveSongAt(0);     
                         return Task.CompletedTask;
                         // Thread.Sleep(500);
                 }  
