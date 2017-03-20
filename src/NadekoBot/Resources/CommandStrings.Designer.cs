@@ -4956,7 +4956,7 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Moves the bot to your voice channel. (works only if music is already playing).
+        ///    Looks up a localized string similar to Moves the bot to your voice channel. Can also be used to refresh the bot's current voice channel with no disruption. Works only if music is already playing or paused..
         /// </summary>
         public static string move_desc {
             get {
