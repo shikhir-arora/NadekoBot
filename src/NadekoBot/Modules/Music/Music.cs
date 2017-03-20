@@ -51,43 +51,43 @@ namespace NadekoBot.Modules.Music
             try
             {
 
-             string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss" }; // covers all our formats 
+              string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss" }; // covers all our formats 
              
-                //if bot moved
-                if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &
-                        usr.Id == NadekoBot.Client.CurrentUser.Id)
+                //combine cases
+                if ((player.PlaybackVoiceChannel == oldState.VoiceChannel &
+                        usr.Id == NadekoBot.Client.CurrentUser.Id) | (player.PlaybackVoiceChannel == newState.VoiceChannel) | (player.PlaybackVoiceChannel == oldState.VoiceChannel))
                 {
-                    if (player.Paused && newState.VoiceChannel.Users.Count > 1) { //unpause if there are people in the new channel
+                    if ((player.Paused && newState.VoiceChannel.Users.Count > 1) | (player.Paused &
+                        newState.VoiceChannel.Users.Count == 2)) // unpause if 1) there are people in the new channel 2) or new user joins previously empty, paused channel
+                    { 
                         var currentSong = player.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
-                        var duration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                        int time = (int) duration; 
+                        var currentTime = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        int time = (int) currentTime; 
+                        refresh.SkipTo = time;
+                        player.AddSong(refresh, 0);
+                        player.TogglePause();
+                        Thread.Sleep(100);
+                        player.RemoveSongAt(1); // we remove at index one for the unpause cases
+                    }     
+                    
+                    else if ((!player.Paused & newState.VoiceChannel.Users.Count <= 1) | (!player.Paused & oldState.VoiceChannel.Users.Count < 2)) // pause if 1) there are no users in the new channel 2) or if left last and player unpaused, our pause cases
+                    { 
+                        var currentSong = player.CurrentSong ?? null;
+                        var refresh = currentSong.Clone();
+                        var currentTime = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        int time = (int) currentTime; 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
                         player.TogglePause();
                         Thread.Sleep(200);
-                        player.RemoveSongAt(1); // we remove at index one for this case only
-                      
-                 }     
-                    else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
-                        var currentSong = player.CurrentSong ?? null;
-                        var refresh = currentSong.Clone();
-                        var duration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                        int time = (int) duration; 
-                        refresh.SkipTo = time;
-                        player.AddSong(refresh, 0);
-                        player.TogglePause();
-                        Thread.Sleep(300);
-                        player.RemoveSongAt(0); 
-                      
-                        
-                        
-                       
+                        player.RemoveSongAt(0); // remove index 0 for pause cases
+                          
                     }
                     return Task.CompletedTask;
                 }
-
-                // the above part is structured a bit differently than last part of our if condition
+                
+                /*
                 // if some other user moved
                 if ((player.PlaybackVoiceChannel == newState.VoiceChannel & //if joined first, and player paused, unpause 
                         player.Paused &
@@ -98,17 +98,17 @@ namespace NadekoBot.Modules.Music
                 { 
                         var currentSong = player.CurrentSong ?? null;
                         var refresh = currentSong.Clone();
-                        var duration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                        int time = (int) duration; 
+                        var currentTime = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                        int time = (int) currentTime; 
                         refresh.SkipTo = time;
                         player.AddSong(refresh, 0);
                         player.TogglePause(); 
-                        Thread.Sleep(200);
+                        Thread.Sleep(100);
                         player.RemoveSongAt(0);     
                         return Task.CompletedTask;
                         // Thread.Sleep(500);
-                }  
-             }  
+                }  **/
+            }  
             catch { 
                   
                   } // ignored
