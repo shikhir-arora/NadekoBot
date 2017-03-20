@@ -53,7 +53,7 @@ namespace NadekoBot.Modules.Music
 
              string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss", @"h\:mm", @"hh\:mm" }; // covers all our formats 
              
-                /*
+                
                
                 if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &
                         usr.Id == NadekoBot.Client.CurrentUser.Id)
@@ -69,24 +69,23 @@ namespace NadekoBot.Modules.Music
                        // Thread.Sleep(200);
                         //player.RemoveSongAt(0); 
                       
-                 }  */   
-             //       else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
+                 }     
+                   else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) { // pause if there are no users in the new channel
                         //var currentSong = player.CurrentSong ?? null;
                         //var refresh = currentSong.Clone();
                         //var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
                         //int time = (int) currentDuration; 
                         //refresh.SkipTo = time;
                         //player.AddSong(refresh, 0);
-                 //       player.TogglePause();
+                        player.TogglePause();
                       //  Thread.Sleep(300);
                       //  player.RemoveSongAt(0); 
                     
-                        
-                        
+            
                        
-                 //   }
-                  //  return Task.CompletedTask;
-             //   }
+                    }
+                    return Task.CompletedTask;
+                }
                 
                
                 
@@ -100,16 +99,16 @@ namespace NadekoBot.Modules.Music
                         !player.Paused &
                         oldState.VoiceChannel.Users.Count == 1))
                 { 
-                        var currentSong = player.CurrentSong ?? null;
-                        var refresh = currentSong.Clone();
-                        var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                        int time = (int) currentDuration; 
-                        refresh.SkipTo = time;
-                        player.AddSong(refresh, 0);
+                      //  var currentSong = player.CurrentSong ?? null;
+                      //  var refresh = currentSong.Clone();
+                      //  var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+                     //   int time = (int) currentDuration; 
+                     //   refresh.SkipTo = time;
+                     //   player.AddSong(refresh, 0);
                         player.TogglePause(); 
                         //Thread.Sleep(200);
-                        player.RemoveSongAt(0);     
-                        return Task.CompletedTask;
+                    //    player.RemoveSongAt(0);     
+                    //    return Task.CompletedTask;
                         // Thread.Sleep(500);
                 }  
              }  
@@ -525,7 +524,7 @@ namespace NadekoBot.Modules.Music
                         refresh.SkipTo = time;
                         musicPlayer.AddSong(refresh, 0);
                         musicPlayer.RemoveSongAt(0);               
-                        musicPlayer.TogglePause();
+                       // musicPlayer.TogglePause();
                         
             await musicPlayer.MoveToVoiceChannel(voiceChannel);
         }
