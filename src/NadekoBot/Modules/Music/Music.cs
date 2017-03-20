@@ -338,7 +338,7 @@ namespace NadekoBot.Modules.Music
             var plId = (await NadekoBot.Google.GetPlaylistIdsByKeywordsAsync(arg).ConfigureAwait(false)).FirstOrDefault();
             if (plId == null)
             {
-                await ReplyErrorLocalized("no_search_results").ConfigureAwait(false);
+                await ReplyErrorLocalized("https://raw.githubusercontent.com/shikhir-arora/NadekoBot/dev/src/NadekoBot/Modules/Music/Music.csno_search_results").ConfigureAwait(false);
                 return;
             }
             var ids = await NadekoBot.Google.GetPlaylistTracksAsync(plId, 500).ConfigureAwait(false);
@@ -947,7 +947,9 @@ namespace NadekoBot.Modules.Music
                             .WithFooter(ef => ef.WithText(song.PrettyInfo))
                             .WithErrorColor();
 
-                        await mp.OutputTextChannel.EmbedAsync(embed).ConfigureAwait(false);
+                       removedMsg = await mp.OutputTextChannel.EmbedAsync(embed).ConfigureAwait(false);
+                       removedMsg?.DeleteAfter(15);
+                        
 
                     }
                     catch
