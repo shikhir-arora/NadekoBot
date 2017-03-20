@@ -338,7 +338,7 @@ namespace NadekoBot.Modules.Music
             var plId = (await NadekoBot.Google.GetPlaylistIdsByKeywordsAsync(arg).ConfigureAwait(false)).FirstOrDefault();
             if (plId == null)
             {
-                await ReplyErrorLocalized("https://raw.githubusercontent.com/shikhir-arora/NadekoBot/dev/src/NadekoBot/Modules/Music/Music.csno_search_results").ConfigureAwait(false);
+                await ReplyErrorLocalized("no_search_results").ConfigureAwait(false);
                 return;
             }
             var ids = await NadekoBot.Google.GetPlaylistTracksAsync(plId, 500).ConfigureAwait(false);
@@ -478,7 +478,7 @@ namespace NadekoBot.Modules.Music
         [RequireContext(ContextType.Guild)]
         public async Task Move()
         {
-            string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss", @"h\:mm", @"hh\:mm" };
+            string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss", @"h\:mm", @"hh\:mm" }; 
             MusicPlayer musicPlayer;
             var voiceChannel = ((IGuildUser)Context.User).VoiceChannel;
             if (voiceChannel == null || voiceChannel.Guild != Context.Guild || !MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
