@@ -51,7 +51,7 @@ namespace NadekoBot.Modules.Music
             try
             {
 
-              string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss" }; // covers all our formats 
+              string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss", @"h\:mm", @"hh\:mm" }; // covers all our formats 
              
                 //combine cases
                 if ((player.PlaybackVoiceChannel == oldState.VoiceChannel &
