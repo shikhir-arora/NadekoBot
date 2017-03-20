@@ -940,7 +940,8 @@ namespace NadekoBot.Modules.Music
                 mp.SongRemoved += async (song, index) =>
                 {
                     try
-                    {
+                    {   
+                        IUserMessage removedMsg;
                         var embed = new EmbedBuilder()
                             .WithAuthor(eab => eab.WithName(GetText("removed_song") + " #" + (index + 1)).WithMusicIcon())
                             .WithDescription(song.PrettyName)
@@ -948,6 +949,7 @@ namespace NadekoBot.Modules.Music
                             .WithErrorColor();
 
                        removedMsg = await mp.OutputTextChannel.EmbedAsync(embed).ConfigureAwait(false);
+                       
                        removedMsg?.DeleteAfter(15);
                         
 
