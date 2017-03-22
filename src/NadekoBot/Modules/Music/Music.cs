@@ -58,12 +58,12 @@ namespace NadekoBot.Modules.Music
                 {
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) //unpause if there are people in the new channel
                     {
-                        Thread.Sleep(100);
+                        Thread.Sleep(50);
                         player.TogglePause();
                     }    
                     else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) // pause if there are no users in the new channel
                     {   
-                        Thread.Sleep(100);
+                        Thread.Sleep(50);
                         player.TogglePause();
                     }     
                     return Task.CompletedTask;
@@ -78,7 +78,7 @@ namespace NadekoBot.Modules.Music
                         !player.Paused &&
                         oldState.VoiceChannel.Users.Count == 1))
                 {   
-                    Thread.Sleep(100);
+                    Thread.Sleep(50);
                     player.TogglePause();
                     return Task.CompletedTask;
                 }
