@@ -480,7 +480,7 @@ namespace NadekoBot.Modules.Music
 
         }
 
-        [NadekoCommand, Usage, Description, Aliases]
+        [NadekoCommand(RunMode = RunMode.Async), Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         public async Task Move()
         {
@@ -492,11 +492,11 @@ namespace NadekoBot.Modules.Music
             if (musicPlayer.Paused)
                 musicPlayer.TogglePause();
             var currentSong = musicPlayer.CurrentSong ?? null;
-                        var refresh = currentSong.Clone();
-                        var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-                        int time = (int) currentDuration; 
-                        refresh.SkipTo = time;
-                        musicPlayer.AddSong(refresh, 0);
+            var refresh = currentSong.Clone();
+            var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+            int time = (int) currentDuration; 
+            refresh.SkipTo = time;
+            musicPlayer.AddSong(refresh, 0);
                      
                         
             await musicPlayer.MoveToVoiceChannel(voiceChannel);
