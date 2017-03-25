@@ -91,7 +91,7 @@ namespace NadekoBot.Modules.Music
             return Task.CompletedTask;
         }
 
-        [NadekoCommand, Usage, Description, Aliases]
+        [NadekoCommand(RunMode = RunMode.Async), Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         public Task Next(int skipCount = 1)
         {
@@ -108,6 +108,23 @@ namespace NadekoBot.Modules.Music
                 }
                 musicPlayer.Next();
             }
+            return Task.CompletedTask;
+        }
+        
+        [NadekoCommand(RunMode = RunMode.Async), Usage, Description, Aliases]
+        [RequireContext(ContextType.Guild)]
+        [OwnerOnly]
+        public Task Buffer()
+        {
+          
+            MusicPlayer musicPlayer;
+            if (!MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer)) return Task.CompletedTask;
+            if (musicPlayer.PlaybackVoiceChannel == ((IGuildUser)Context.User).VoiceChannel)
+            {
+                musicPlayer.RemoveSongAt(0);
+                musicPlayer.Next();
+                Thread.Sleep(50);
+            }    
             return Task.CompletedTask;
         }
 
