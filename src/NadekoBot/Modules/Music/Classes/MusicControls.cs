@@ -368,6 +368,15 @@ namespace NadekoBot.Modules.Music.Classes
             PlaybackVoiceChannel = voiceChannel;
             audioClient = await voiceChannel.ConnectAsync().ConfigureAwait(false);
         }
+        
+        public async Task JoinVoiceChannel(IVoiceChannel voiceChannel)
+        {   
+            if(audioClient.ConnectionState == ConnectionState.Connected) 
+                throw new InvalidOperationException("The bot appears to be connected to a voice channel. Use move commands.");
+            PlaybackVoiceChannel = voiceChannel;
+            audioClient = await voiceChannel.ConnectAsync().ConfigureAwait(false);
+        }
+        
 
         public bool ToggleRepeatSong() => RepeatSong = !RepeatSong;
 
