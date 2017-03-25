@@ -4974,6 +4974,33 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to buffer b.
+        /// </summary>
+        public static string buffer_cmd {
+            get {
+                return ResourceManager.GetString("buffer_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Rebuffers the audio stream. Used to refresh a silent audio client after bot moving channels..
+        /// </summary>
+        public static string buffer_desc {
+            get {
+                return ResourceManager.GetString("buffer_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///     Looks up a localized string similar to `{0}b`.
+        /// </summary>
+        public static string buffer_usage {
+            get {
+                return ResourceManager.GetString("buffer_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to movelist ml.
         /// </summary>
         public static string movelist_cmd {
