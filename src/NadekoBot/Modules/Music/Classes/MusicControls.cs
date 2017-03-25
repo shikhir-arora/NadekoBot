@@ -185,7 +185,7 @@ namespace NadekoBot.Modules.Music.Classes
                         SongCancelSource = new CancellationTokenSource();
                         cancelToken = SongCancelSource.Token;
                         CurrentSong = null;
-                        await Task.Delay(300).ConfigureAwait(false);
+                        await Task.Delay(500).ConfigureAwait(false);
                     }
                 }
             });
@@ -365,14 +365,6 @@ namespace NadekoBot.Modules.Music.Classes
         {
             if (audioClient?.ConnectionState != ConnectionState.Connected)
                 throw new InvalidOperationException("Can't move while bot is not connected to voice channel.");
-            PlaybackVoiceChannel = voiceChannel;
-            audioClient = await voiceChannel.ConnectAsync().ConfigureAwait(false);
-        }
-        
-        public async Task JoinVoiceChannel(IVoiceChannel voiceChannel)
-        {   
-            if(audioClient.ConnectionState == ConnectionState.Connected) 
-                throw new InvalidOperationException("The bot appears to be connected to a voice channel. Use move commands.");
             PlaybackVoiceChannel = voiceChannel;
             audioClient = await voiceChannel.ConnectAsync().ConfigureAwait(false);
         }
