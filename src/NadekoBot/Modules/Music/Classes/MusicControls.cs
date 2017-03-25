@@ -185,7 +185,7 @@ namespace NadekoBot.Modules.Music.Classes
                         SongCancelSource = new CancellationTokenSource();
                         cancelToken = SongCancelSource.Token;
                         CurrentSong = null;
-                        await Task.Delay(500).ConfigureAwait(false);
+                        await Task.Delay(200).ConfigureAwait(false);
                     }
                 }
             });
@@ -193,6 +193,15 @@ namespace NadekoBot.Modules.Music.Classes
             t.Start();
         }
 
+        public void Buffer()
+        {
+            actionQueue.Enqueue(() =>
+            {
+                Paused = false;
+                SongCancelSource.Cancel();
+            });
+        }
+        
         public void Next()
         {
             actionQueue.Enqueue(() =>
