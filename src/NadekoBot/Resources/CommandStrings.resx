@@ -1611,6 +1611,15 @@
   <data name="buffer_usage" xml:space="preserve">
     <value>`{0}b`</value>
   </data>
+  <data name="join_cmd" xml:space="preserve">
+    <value>join j</value>
+  </data>
+  <data name="join_desc" xml:space="preserve">
+    <value>Summons the bot to the current voice channel. The bot must not be in an active voice channel prior.</value>
+  </data>
+  <data name="join_usage" xml:space="preserve">
+    <value>`{0}join`</value>
+  </data>
   <data name="remove_cmd" xml:space="preserve">
     <value>remove rm</value>
   </data>
