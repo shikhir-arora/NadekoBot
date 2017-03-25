@@ -277,6 +277,8 @@ namespace NadekoBot.Modules.Music
         public async Task NowPlaying()
         {
             MusicPlayer musicPlayer;
+            var currentSong = musicPlayer.CurrentSong;
+
             if (!MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
                 return;
            
