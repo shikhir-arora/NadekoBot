@@ -121,9 +121,7 @@ namespace NadekoBot.Modules.Music
             if (!MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer)) return Task.CompletedTask;
             if (musicPlayer.PlaybackVoiceChannel == ((IGuildUser)Context.User).VoiceChannel)
             {
-
-                musicPlayer.Next();
-                
+                musicPlayer.Buffer();    
             } 
             
             Thread.Sleep(50);
