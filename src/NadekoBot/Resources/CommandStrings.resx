@@ -1602,6 +1602,15 @@
   <data name="move_usage" xml:space="preserve">
     <value>`{0}mv`</value>
   </data>
+  <data name="buffer_cmd" xml:space="preserve">
+    <value>buffer b</value>
+  </data>
+  <data name="buffer_desc" xml:space="preserve">
+    <value>Rebuffers the audio stream. Used to refresh a silent audio client after bot moving channels.</value>
+  </data>
+  <data name="buffer_usage" xml:space="preserve">
+    <value>`{0}b`</value>
+  </data>
   <data name="remove_cmd" xml:space="preserve">
     <value>remove rm</value>
   </data>
