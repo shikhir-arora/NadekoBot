@@ -117,13 +117,19 @@ namespace NadekoBot.Modules.Music
         public Task Buffer()
         {
             MusicPlayer musicPlayer;
+            
+            //var currentSong = musicPlayer.CurrentSong;
+            
+            //if (currentSong == null)
+                //return;
+                
             if (!MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer)) return Task.CompletedTask;
             if (musicPlayer.PlaybackVoiceChannel == ((IGuildUser)Context.User).VoiceChannel)
             {
-               // musicPlayer.RemoveSongAt(0);
-                
+
+                Thread.Sleep(100);
                 musicPlayer.Next();
-                Thread.Sleep(50);
+                
             }    
             return Task.CompletedTask;
         }
@@ -286,16 +292,11 @@ namespace NadekoBot.Modules.Music
                 
             try { await musicPlayer.UpdateSongDurationsAsync().ConfigureAwait(false); } catch { }
             
-            string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss" }; 
-            var totalTime = TimeSpan.ParseExact(currentSong?.PrettyTotalTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-            int totalDur = (int) totalTime;
-            var totalTimeString = TimeSpan.FromSeconds(totalDur).ToString(@"hh\:mm\:ss");   // testing 
-
             var embed = new EmbedBuilder().WithOkColor()
                             .WithAuthor(eab => eab.WithName(GetText("now_playing")).WithMusicIcon())
                             .WithDescription(currentSong.PrettyName)
                             .WithThumbnailUrl(currentSong.Thumbnail)
-                            .WithFooter(ef => ef.WithText(musicPlayer.PrettyVolume + " | " + currentSong.PrettyCurrentTime + $" | {totalTimeString} | {currentSong.PrettyProvider} | {currentSong.QueuerName}"));
+                            .WithFooter(ef => ef.WithText(musicPlayer.PrettyVolume + " | " + currentSong.PrettyTotalTime + $" | {currentSong.PrettyProvider} | {currentSong.QueuerName}"));
 
 
             await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
@@ -528,21 +529,6 @@ namespace NadekoBot.Modules.Music
             await musicPlayer.MoveToVoiceChannel(voiceChannel);
         }
         
-        
-        [NadekoCommand(RunMode = RunMode.Async), Usage, Description, Aliases]
-        [RequireContext(ContextType.Guild)]
-        public async Task Join()
-        {
-            MusicPlayer musicPlayer;
-            var voiceChannel = ((IGuildUser)Context.User).VoiceChannel;
-            if (voiceChannel == null || voiceChannel.Guild != Context.Guild || !MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
-                return;
-                  
-            await musicPlayer.JoinVoiceChannel(voiceChannel);
-        }
-        
-        
-
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         [Priority(0)]
