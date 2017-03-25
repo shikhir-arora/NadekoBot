@@ -124,7 +124,7 @@ namespace NadekoBot.Modules.Music
                 musicPlayer.RemoveSongAt(0);
                 musicPlayer.Next();
                 Thread.Sleep(50);
-                
+            }    
             return Task.CompletedTask;
         }
 
