@@ -5001,6 +5001,33 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to join j.
+        /// </summary>
+        public static string join_cmd {
+            get {
+                return ResourceManager.GetString("buffer_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Summons the bot to the current voice channel. The bot must not be in an active voice channel prior..
+        /// </summary>
+        public static string join_desc {
+            get {
+                return ResourceManager.GetString("buffer_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///     Looks up a localized string similar to `{0}join`.
+        /// </summary>
+        public static string join_usage {
+            get {
+                return ResourceManager.GetString("buffer_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to movelist ml.
         /// </summary>
         public static string movelist_cmd {
