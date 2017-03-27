@@ -23,7 +23,7 @@ namespace NadekoBot.Modules.Music
     [DontAutoLoad]
     public class Music : NadekoTopLevelModule
     {
-        public static ConcurrentDictionary<ulong, MusicPlayer> MusicPlayers { get; } = new ConcurrentDictionary<ulong, MusicPlayer>();
+        public ConcurrentDictionary<ulong, MusicPlayer> MusicPlayers { get; } = new ConcurrentDictionary<ulong, MusicPlayer>();
 
         public const string MusicDataPath = "data/musicdata";
 
@@ -32,42 +32,44 @@ namespace NadekoBot.Modules.Music
             //it can fail if its currenctly opened or doesn't exist. Either way i don't care
             try { Directory.Delete(MusicDataPath, true); } catch { }
 
-            NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;
+            NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdatedAsync;
 
             Directory.CreateDirectory(MusicDataPath);
         }
 
-        private static Task Client_UserVoiceStateUpdated(SocketUser iusr, SocketVoiceState oldState, SocketVoiceState newState)
+        public async Task Client_UserVoiceStateUpdatedAsync(SocketUser iusr, SocketVoiceState oldState, SocketVoiceState newState)
         {
             var usr = iusr as SocketGuildUser;
-            if (usr == null |
+            if (usr == null ||
                 oldState.VoiceChannel == newState.VoiceChannel)
-                return Task.CompletedTask;
+            { 
+               await Task.Delay(200);
+            }   
 
             MusicPlayer player;
             if (!MusicPlayers.TryGetValue(usr.Guild.Id, out player))
-                return Task.CompletedTask;
+                return;
 
-            try
-            {
-
-
+            Task.Run(async () =>
+            { 
+              
+              try
+              {
                 //if bot moved
                 if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &&
                         usr.Id == NadekoBot.Client.CurrentUser.Id)
                 {
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) //unpause if there are people in the new channel
                     {
-                        Thread.Sleep(50);
                         player.TogglePause();
                     }    
                     else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) // pause if there are no users in the new channel
                     {   
-                        Thread.Sleep(50);
                         player.TogglePause();
                     }     
-                    return Task.CompletedTask;
-                }
+                        
+                        await player.Move().ConfigureAwait(false); 
+                 }
 
 
                 //if some other user moved
@@ -78,20 +80,20 @@ namespace NadekoBot.Modules.Music
                         !player.Paused &&
                         oldState.VoiceChannel.Users.Count == 1))
                 {   
-                    Thread.Sleep(50);
                     player.TogglePause();
-                    return Task.CompletedTask;
                 }
 
-            }
-            catch
-            {
+             }
+             catch
+             {
                 // ignored
-            }
-            return Task.CompletedTask;
+             }
+            }).Forget();
+            
+            // return Task.CompletedTask;
         }
 
-        [NadekoCommand(RunMode = RunMode.Async), Usage, Description, Aliases]
+        [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         public Task Next(int skipCount = 1)
         {
@@ -111,20 +113,20 @@ namespace NadekoBot.Modules.Music
             return Task.CompletedTask;
         }
         
-        [NadekoCommand(RunMode = RunMode.Async), Usage, Description, Aliases]
+        [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        [OwnerOnly]
+        [RequireUserPermission(GuildPermission.ManageMessages)] // temporary 
         public Task Buffer()
         {
-          
             MusicPlayer musicPlayer;
+
             if (!MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer)) return Task.CompletedTask;
             if (musicPlayer.PlaybackVoiceChannel == ((IGuildUser)Context.User).VoiceChannel)
             {
-                musicPlayer.RemoveSongAt(0);
-                musicPlayer.Next();
-                Thread.Sleep(50);
-            }    
+                musicPlayer.Buffer();    
+            } 
+            
+            //Thread.Sleep(50);
             return Task.CompletedTask;
         }
 
@@ -277,18 +279,21 @@ namespace NadekoBot.Modules.Music
         public async Task NowPlaying()
         {
             MusicPlayer musicPlayer;
+
             if (!MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
                 return;
             var currentSong = musicPlayer.CurrentSong;
             if (currentSong == null)
                 return;
+                
             try { await musicPlayer.UpdateSongDurationsAsync().ConfigureAwait(false); } catch { }
-
+            
             var embed = new EmbedBuilder().WithOkColor()
                             .WithAuthor(eab => eab.WithName(GetText("now_playing")).WithMusicIcon())
                             .WithDescription(currentSong.PrettyName)
                             .WithThumbnailUrl(currentSong.Thumbnail)
                             .WithFooter(ef => ef.WithText(musicPlayer.PrettyVolume + " | " + currentSong.PrettyFullTime + $" | {currentSong.PrettyProvider} | {currentSong.QueuerName}"));
+
 
             await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
         }
@@ -497,28 +502,30 @@ namespace NadekoBot.Modules.Music
 
         }
 
-        [NadekoCommand(RunMode = RunMode.Async), Usage, Description, Aliases]
+        [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         public async Task Move()
         {
-            string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss", @"h\:mm", @"hh\:mm" }; 
+            string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss" }; 
             MusicPlayer musicPlayer;
             var voiceChannel = ((IGuildUser)Context.User).VoiceChannel;
             if (voiceChannel == null || voiceChannel.Guild != Context.Guild || !MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
                 return;
             if (musicPlayer.Paused)
-                musicPlayer.TogglePause();
+                musicPlayer.TogglePause(); // we must ensure the player is not paused before moving channels
+            try { await musicPlayer.UpdateSongDurationsAsync().ConfigureAwait(false); } catch { } // try to update our song durations for good measure
             var currentSong = musicPlayer.CurrentSong ?? null;
             var refresh = currentSong.Clone();
             var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
-            int time = (int) currentDuration; 
+            int time = (int) currentDuration;  // get our currentSong exact time where we left off prior to moving and store it 
             refresh.SkipTo = time;
-            musicPlayer.AddSong(refresh, 0);
-                     
-                        
+            musicPlayer.AddSong(refresh, 0); // seamlessly insert song at exact time where we left off prior and await MoveToVoiceChannel
+           
             await musicPlayer.MoveToVoiceChannel(voiceChannel);
+            
+           
         }
-
+        
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         [Priority(0)]
@@ -972,7 +979,7 @@ namespace NadekoBot.Modules.Music
 
                        removedMsg = await mp.OutputTextChannel.EmbedAsync(embed).ConfigureAwait(false);
                        
-                       removedMsg?.DeleteAfter(15);
+                       removedMsg?.DeleteAfter(10);
                         
 
                     }
