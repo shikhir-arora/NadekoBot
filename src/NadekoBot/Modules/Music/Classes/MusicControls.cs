@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.Audio;
 using NadekoBot.Extensions;
 using System;
@@ -185,7 +185,7 @@ namespace NadekoBot.Modules.Music.Classes
                         SongCancelSource = new CancellationTokenSource();
                         cancelToken = SongCancelSource.Token;
                         CurrentSong = null;
-                        await Task.Delay(300).ConfigureAwait(false);
+                        await Task.Delay(200).ConfigureAwait(false);
                     }
                 }
             });
@@ -193,6 +193,15 @@ namespace NadekoBot.Modules.Music.Classes
             t.Start();
         }
 
+        public void Buffer()
+        {
+            actionQueue.Enqueue(() =>
+            {
+                Paused = false;
+                SongCancelSource.Cancel();
+            });
+        }
+        
         public void Next()
         {
             actionQueue.Enqueue(() =>
@@ -361,13 +370,14 @@ namespace NadekoBot.Modules.Music.Classes
             });
         }
 
-        //public async Task MoveToVoiceChannel(IVoiceChannel voiceChannel)
-        //{
-        //    if (audioClient?.ConnectionState != ConnectionState.Connected)
-        //        throw new InvalidOperationException("Can't move while bot is not connected to voice channel.");
-        //    PlaybackVoiceChannel = voiceChannel;
-        //    audioClient = await voiceChannel.ConnectAsync().ConfigureAwait(false);
-        //}
+        public async Task MoveToVoiceChannel(IVoiceChannel voiceChannel)
+        {
+            if (audioClient?.ConnectionState != ConnectionState.Connected)
+                throw new InvalidOperationException("Can't move while bot is not connected to voice channel.");
+            PlaybackVoiceChannel = voiceChannel;
+            audioClient = await voiceChannel.ConnectAsync().ConfigureAwait(false);
+        }
+        
 
         public bool ToggleRepeatSong() => RepeatSong = !RepeatSong;
 
