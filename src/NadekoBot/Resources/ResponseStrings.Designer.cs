@@ -6053,7 +6053,7 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Your discord account might not be connected to Patreon.. If you are unsure what that means, or don&apos;t know how to connect it - you have to go to [Patreon account settings page](https://patreon.com/settings/account) and click &apos;Connect to discord&apos; button..
+        ///    Looks up a localized string similar to Your discord account might not be connected to Patreon. If you are unsure what that means, or don&apos;t know how to connect it - you have to go to [Patreon account settings page](https://patreon.com/settings/account) and click &apos;Connect to discord&apos; button..
         /// </summary>
         public static string utility_clpa_fail_conn {
             get {
@@ -6503,6 +6503,15 @@ namespace NadekoBot.Resources {
         public static string utility_quotes_page_none {
             get {
                 return ResourceManager.GetString("utility_quotes_page_none", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to No quotes found matching the quote ID specified..
+        /// </summary>
+        public static string utility_quotes_notfound {
+            get {
+                return ResourceManager.GetString("utility_quotes_notfound", resourceCulture);
             }
         }
         
