@@ -100,6 +100,11 @@ namespace NadekoBot.Modules.Music
             }
             
             MusicPlayer player;   
+            if (!MusicPlayers.TryGetValue(usr.Guild.Id, out player))
+                return Task.CompletedTask;
+            try 
+            {
+            
             if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &&
                         usr.Id == NadekoBot.Client.CurrentUser.Id)
             {
@@ -119,6 +124,10 @@ namespace NadekoBot.Modules.Music
            
             await player.MoveToVoiceChannel(voiceChannel);
             }
+            
+            }
+            
+            catch { } // ignore
             
           NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdatedAsync;
 
