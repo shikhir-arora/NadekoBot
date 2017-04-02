@@ -23,7 +23,7 @@ namespace NadekoBot.Modules.Music
     [DontAutoLoad]
     public class Music : NadekoTopLevelModule
     {
-        public ConcurrentDictionary<ulong, MusicPlayer> MusicPlayers { get; } = new ConcurrentDictionary<ulong, MusicPlayer>();
+        public static ConcurrentDictionary<ulong, MusicPlayer> MusicPlayers { get; } = new ConcurrentDictionary<ulong, MusicPlayer>();
 
         public const string MusicDataPath = "data/musicdata";
 
@@ -33,7 +33,6 @@ namespace NadekoBot.Modules.Music
             try { Directory.Delete(MusicDataPath, true); } catch { }
 
             NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;
-            NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdatedAsync;
 
             Directory.CreateDirectory(MusicDataPath);
         }
@@ -119,8 +118,12 @@ namespace NadekoBot.Modules.Music
             player.AddSong(refresh, 0); // seamlessly insert song at exact time where we left off prior and await MoveToVoiceChannel
            
             await player.MoveToVoiceChannel(voiceChannel);
-            }  
+            }
+            
+          NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdatedAsync;
+
         }
+        
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         public Task Next(int skipCount = 1)
