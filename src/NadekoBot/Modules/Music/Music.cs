@@ -98,13 +98,13 @@ namespace NadekoBot.Modules.Music
             {
                 await Task.Delay(200);
             }
-         
+            
+            MusicPlayer player;   
             if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &&
                         usr.Id == NadekoBot.Client.CurrentUser.Id)
             {
             string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss" }; 
             var voiceChannel = ((IGuildUser)Context.User).VoiceChannel;
-            MusicPlayer player;
             if (voiceChannel == null || voiceChannel.Guild != Context.Guild || !MusicPlayers.TryGetValue(Context.Guild.Id, out player))
                 return;
             if (player.Paused)
