@@ -101,7 +101,7 @@ namespace NadekoBot.Modules.Music
             
             MusicPlayer player;   
             if (!MusicPlayers.TryGetValue(usr.Guild.Id, out player))
-                return Task.CompletedTask;
+                return;
             try 
             {
             
