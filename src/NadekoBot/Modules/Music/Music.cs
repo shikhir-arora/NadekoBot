@@ -37,7 +37,7 @@ namespace NadekoBot.Modules.Music
             Directory.CreateDirectory(MusicDataPath);
         }
         
-        public MusicHandler() 
+        public void MusicHandler() 
         {  
             NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;  
         }
