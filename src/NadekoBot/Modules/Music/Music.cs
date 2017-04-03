@@ -32,11 +32,16 @@ namespace NadekoBot.Modules.Music
             //it can fail if its currenctly opened or doesn't exist. Either way i don't care
             try { Directory.Delete(MusicDataPath, true); } catch { }
 
-            NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;
+            //NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;
 
             Directory.CreateDirectory(MusicDataPath);
         }
-
+        
+        public MusicHandler() 
+        {  
+            NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;  
+        }
+        
         private Task Client_UserVoiceStateUpdated(SocketUser iusr, SocketVoiceState oldState, SocketVoiceState newState)
         {
             var usr = iusr as SocketGuildUser;
