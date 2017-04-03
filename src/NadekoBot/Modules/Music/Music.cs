@@ -91,7 +91,7 @@ namespace NadekoBot.Modules.Music
             return Task.CompletedTask;
         }
         
-        public async Task Client_UserVoiceStateUpdatedAsync(SocketUser iusr, SocketVoiceState oldState, SocketVoiceState newState)
+        public static async Task Client_UserVoiceStateUpdatedAsync(SocketUser iusr, SocketVoiceState oldState, SocketVoiceState newState)
         {
             var usr = iusr as SocketGuildUser;
             if (usr == null ||
