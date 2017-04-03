@@ -157,7 +157,7 @@ namespace NadekoBot.Modules.Music
         
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages)] // temporary 
+        [OwnerOnly] // temporary 
         public Task Buffer()
         {
             MusicPlayer musicPlayer;
