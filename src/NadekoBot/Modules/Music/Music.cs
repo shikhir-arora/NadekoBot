@@ -33,6 +33,7 @@ namespace NadekoBot.Modules.Music
             try { Directory.Delete(MusicDataPath, true); } catch { }
 
             NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;
+            NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdatedAsync;
 
             Directory.CreateDirectory(MusicDataPath);
         }
@@ -129,7 +130,7 @@ namespace NadekoBot.Modules.Music
             
             catch { } // ignore
             
-          NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdatedAsync;
+          //NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdatedAsync;
 
         }
         
