@@ -1606,10 +1606,19 @@
     <value>move mv</value>
   </data>
   <data name="move_desc" xml:space="preserve">
-    <value>Moves the bot to your voice channel. (works only if music is already playing)</value>
+    <value>Moves the bot to your voice channel. This command can be used to refresh the state in a voice channel, but may require the use of the buffer command to resume. Works only if music is already playing or paused.</value>
   </data>
   <data name="move_usage" xml:space="preserve">
     <value>`{0}mv`</value>
+  </data>
+  <data name="buffer_cmd" xml:space="preserve">
+    <value>buffer b</value>
+  </data>
+  <data name="buffer_desc" xml:space="preserve">
+    <value>Rebuffers the audio stream. The intended use should only be to refresh and safely resume audio playback after using the move command to change voice channels with minimal disruption.</value>
+  </data>
+  <data name="buffer_usage" xml:space="preserve">
+    <value>`{0}b`</value>
   </data>
   <data name="remove_cmd" xml:space="preserve">
     <value>remove rm</value>

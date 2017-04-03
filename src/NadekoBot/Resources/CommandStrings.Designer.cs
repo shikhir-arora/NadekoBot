@@ -4983,7 +4983,7 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Moves the bot to your voice channel. (works only if music is already playing).
+        ///   Looks up a localized string similar to Moves the bot to your voice channel. This command can be used to refresh the state in a voice channel, but may require the use of the buffer command to resume. Works only if music is already playing or paused..
         /// </summary>
         public static string move_desc {
             get {
@@ -4997,6 +4997,33 @@ namespace NadekoBot.Resources {
         public static string move_usage {
             get {
                 return ResourceManager.GetString("move_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to buffer b.
+        /// </summary>
+        public static string buffer_cmd {
+            get {
+                return ResourceManager.GetString("buffer_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Rebuffers the audio stream. The intended use should only be to refresh and safely resume audio playback after using the move command to change voice channels with minimal disruption..
+        /// </summary>
+        public static string buffer_desc {
+            get {
+                return ResourceManager.GetString("buffer_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///     Looks up a localized string similar to `{0}b`.
+        /// </summary>
+        public static string buffer_usage {
+            get {
+                return ResourceManager.GetString("buffer_usage", resourceCulture);
             }
         }
         

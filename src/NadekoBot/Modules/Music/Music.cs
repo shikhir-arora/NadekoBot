@@ -1,10 +1,11 @@
-﻿using Discord.Commands;
+using Discord.Commands;
 using NadekoBot.Modules.Music.Classes;
 using System.Collections.Concurrent;
 using Discord.WebSocket;
 using NadekoBot.Services;
 using System.IO;
 using Discord;
+using System.Globalization;
 using System.Threading.Tasks;
 using NadekoBot.Attributes;
 using System;
@@ -56,13 +57,17 @@ namespace NadekoBot.Modules.Music
                         usr.Id == NadekoBot.Client.CurrentUser.Id)
                 {
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) //unpause if there are people in the new channel
+                    {
+                        Thread.Sleep(50);
                         player.TogglePause();
+                    }    
                     else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) // pause if there are no users in the new channel
+                    {   
+                        Thread.Sleep(50);
                         player.TogglePause();
-
+                    }     
                     return Task.CompletedTask;
                 }
-
 
                 //if some other user moved
                 if ((player.PlaybackVoiceChannel == newState.VoiceChannel && //if joined first, and player paused, unpause 
@@ -71,7 +76,8 @@ namespace NadekoBot.Modules.Music
                     (player.PlaybackVoiceChannel == oldState.VoiceChannel && // if left last, and player unpaused, pause
                         !player.Paused &&
                         oldState.VoiceChannel.Users.Count == 1))
-                {
+                {   
+                    Thread.Sleep(50);
                     player.TogglePause();
                     return Task.CompletedTask;
                 }
@@ -83,7 +89,52 @@ namespace NadekoBot.Modules.Music
             }
             return Task.CompletedTask;
         }
+        
+        public async Task Client_UserVoiceStateUpdatedAsync(SocketUser iusr, SocketVoiceState oldState, SocketVoiceState newState)
+        {
+            var usr = iusr as SocketGuildUser;
+            if (usr == null ||
+                oldState.VoiceChannel == newState.VoiceChannel)
+            {
+                return;  // await Task.Delay(200);
+            }
+            
+            MusicPlayer player;   
+            if (!MusicPlayers.TryGetValue(usr.Guild.Id, out player))
+                return;
+            try 
+            {
+            
+            if ((player.PlaybackVoiceChannel == oldState.VoiceChannel) &&
+                        usr.Id == NadekoBot.Client.CurrentUser.Id)
+            {
+            string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss" }; 
+            var voiceChannel = ((IGuildUser)Context.User).VoiceChannel;
+            if (voiceChannel == null || voiceChannel.Guild != Context.Guild || !MusicPlayers.TryGetValue(Context.Guild.Id, out player))
+                return;
+            if (player.Paused)
+                player.TogglePause(); // we must ensure the player is not paused before moving channels
+            try { await player.UpdateSongDurationsAsync().ConfigureAwait(false); } catch { } // try to update our song durations for good measure
+            var currentSong = player.CurrentSong ?? null;
+            var refresh = currentSong.Clone();
+            var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+            int time = (int) currentDuration;  // get our currentSong exact time where we left off prior to moving and store it 
+            refresh.SkipTo = time;
+            player.AddSong(refresh, 0); // seamlessly insert song at exact time where we left off prior and await MoveToVoiceChannel
+            
+            await player.MoveToVoiceChannel(voiceChannel).ConfigureAwait(false);
+            }
+            
+            NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdatedAsync;
+            
+            }
+            
+            catch { } // ignore
+            
+          NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdatedAsync;
 
+        }
+        
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         public Task Next(int skipCount = 1)
@@ -101,6 +152,23 @@ namespace NadekoBot.Modules.Music
                 }
                 musicPlayer.Next();
             }
+            return Task.CompletedTask;
+        }
+        
+        [NadekoCommand, Usage, Description, Aliases]
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.ManageMessages)] // temporary 
+        public Task Buffer()
+        {
+            MusicPlayer musicPlayer;
+
+            if (!MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer)) return Task.CompletedTask;
+            if (musicPlayer.PlaybackVoiceChannel == ((IGuildUser)Context.User).VoiceChannel)
+            {
+                musicPlayer.Buffer();    
+            } 
+            
+            //Thread.Sleep(50);
             return Task.CompletedTask;
         }
 
@@ -253,18 +321,21 @@ namespace NadekoBot.Modules.Music
         public async Task NowPlaying()
         {
             MusicPlayer musicPlayer;
+
             if (!MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
                 return;
             var currentSong = musicPlayer.CurrentSong;
             if (currentSong == null)
                 return;
+                
             try { await musicPlayer.UpdateSongDurationsAsync().ConfigureAwait(false); } catch { }
-
+            
             var embed = new EmbedBuilder().WithOkColor()
                             .WithAuthor(eab => eab.WithName(GetText("now_playing")).WithMusicIcon())
                             .WithDescription(currentSong.PrettyName)
                             .WithThumbnailUrl(currentSong.Thumbnail)
                             .WithFooter(ef => ef.WithText(musicPlayer.PrettyVolume + " | " + currentSong.PrettyFullTime + $" | {currentSong.PrettyProvider} | {currentSong.QueuerName}"));
+
 
             await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
         }
@@ -473,18 +544,30 @@ namespace NadekoBot.Modules.Music
 
         }
 
-        //[NadekoCommand, Usage, Description, Aliases]
-        //[RequireContext(ContextType.Guild)]
-        //public async Task Move()
-        //{
-
-        //    MusicPlayer musicPlayer;
-        //    var voiceChannel = ((IGuildUser)Context.User).VoiceChannel;
-        //    if (voiceChannel == null || voiceChannel.Guild != Context.Guild || !MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
-        //        return;
-        //    await musicPlayer.MoveToVoiceChannel(voiceChannel);
-        //}
-
+        [NadekoCommand, Usage, Description, Aliases]
+        [RequireContext(ContextType.Guild)]
+        public async Task Move()
+        {
+            string[] formats = { @"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss" }; 
+            MusicPlayer musicPlayer;
+            var voiceChannel = ((IGuildUser)Context.User).VoiceChannel;
+            if (voiceChannel == null || voiceChannel.Guild != Context.Guild || !MusicPlayers.TryGetValue(Context.Guild.Id, out musicPlayer))
+                return;
+            if (musicPlayer.Paused)
+                musicPlayer.TogglePause(); // we must ensure the player is not paused before moving channels
+            try { await musicPlayer.UpdateSongDurationsAsync().ConfigureAwait(false); } catch { } // try to update our song durations for good measure
+            var currentSong = musicPlayer.CurrentSong ?? null;
+            var refresh = currentSong.Clone();
+            var currentDuration = TimeSpan.ParseExact(currentSong?.PrettyCurrentTime, formats, CultureInfo.InvariantCulture).TotalSeconds;
+            int time = (int) currentDuration;  // get our currentSong exact time where we left off prior to moving and store it 
+            refresh.SkipTo = time;
+            musicPlayer.AddSong(refresh, 0); // seamlessly insert song at exact time where we left off prior and await MoveToVoiceChannel
+           
+            await musicPlayer.MoveToVoiceChannel(voiceChannel);
+            
+           
+        }
+        
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         [Priority(0)]
@@ -928,14 +1011,18 @@ namespace NadekoBot.Modules.Music
                 mp.SongRemoved += async (song, index) =>
                 {
                     try
-                    {
+                    {   
+                        IUserMessage removedMsg;
                         var embed = new EmbedBuilder()
                             .WithAuthor(eab => eab.WithName(GetText("removed_song") + " #" + (index + 1)).WithMusicIcon())
                             .WithDescription(song.PrettyName)
                             .WithFooter(ef => ef.WithText(song.PrettyInfo))
                             .WithErrorColor();
 
-                        await mp.OutputTextChannel.EmbedAsync(embed).ConfigureAwait(false);
+                       removedMsg = await mp.OutputTextChannel.EmbedAsync(embed).ConfigureAwait(false);
+                       
+                       removedMsg?.DeleteAfter(10);
+                        
 
                     }
                     catch
