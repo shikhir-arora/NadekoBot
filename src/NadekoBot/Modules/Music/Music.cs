@@ -66,10 +66,12 @@ namespace NadekoBot.Modules.Music
                     if (player.Paused && newState.VoiceChannel.Users.Count > 1) //unpause if there are people in the new channel
                     {
                         player.TogglePause();
+                        NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;  
                     }    
                     else if (!player.Paused && newState.VoiceChannel.Users.Count <= 1) // pause if there are no users in the new channel
                     {   
                         player.TogglePause();
+                        NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;  
                     }
                     
                     else  
@@ -88,13 +90,17 @@ namespace NadekoBot.Modules.Music
                     int time = (int) currentDuration;  // get our currentSong exact time where we left off prior to moving and store it 
                     refresh.SkipTo = time;
                     player.AddSong(refresh, 0); // seamlessly insert song at exact time where we left off prior and await MoveToVoiceChannel
-           
+                    
                     await player.MoveToVoiceChannel(voiceChannel).ConfigureAwait(false);
+                    
+                    NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;  
+
                     }
                 }    
               }     
               catch { } // ignore for now
-              
+                
+                NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;  
                 return Task.CompletedTask;
             });
                       
@@ -110,6 +116,7 @@ namespace NadekoBot.Modules.Music
                 {   
                     // Thread.Sleep(50);
                     player.TogglePause();
+                    NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;  
                     return Task.CompletedTask;
                 }
 
