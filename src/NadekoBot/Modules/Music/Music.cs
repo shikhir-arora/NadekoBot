@@ -122,7 +122,7 @@ namespace NadekoBot.Modules.Music
             refresh.SkipTo = time;
             player.AddSong(refresh, 0); // seamlessly insert song at exact time where we left off prior and await MoveToVoiceChannel
             
-            await player.MoveToVoiceChannel(voiceChannel);
+            await player.MoveToVoiceChannel(voiceChannel).ConfigureAwait(false);
             }
             
             NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdatedAsync;
