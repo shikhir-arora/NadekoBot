@@ -53,7 +53,7 @@ namespace NadekoBot.Modules.Music
             if (!MusicPlayers.TryGetValue(usr.Guild.Id, out player))
                 return Task.CompletedTask;
             
-            var _states = Task.Run(async () =>
+            Task.Run(async () =>
             {
             
               try
@@ -102,7 +102,8 @@ namespace NadekoBot.Modules.Music
                 
                 NadekoBot.Client.UserVoiceStateUpdated += Client_UserVoiceStateUpdated;  
                 return Task.CompletedTask;
-            });
+                
+            }).ConfigureAwait(false);
                       
           try {
 
