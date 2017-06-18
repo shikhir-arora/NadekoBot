@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
+using NadekoBot.Services.Administration;
 using NadekoBot.Services.Database.Models;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,15 @@ namespace NadekoBot.Modules.Administration
         [Group]
         public class UserPunishCommands : NadekoSubmodule
         {
+            private readonly DbService _db;
+            private readonly MuteService _muteService;
+
+            public UserPunishCommands(DbService db, MuteService muteService)
+            {
+                _db = db;
+                _muteService = muteService;
+            }
+
             private async Task<PunishmentAction?> InternalWarn(IGuild guild, ulong userId, string modName, string reason)
             {
                 if (string.IsNullOrWhiteSpace(reason))
@@ -36,7 +46,7 @@ namespace NadekoBot.Modules.Administration
 
                 int warnings = 1;
                 List<WarningPunishment> ps;
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     ps = uow.GuildConfigs.For(guildId, set => set.Include(x => x.WarnPunishments))
                         .WarnPunishments;
@@ -62,9 +72,9 @@ namespace NadekoBot.Modules.Administration
                     {
                         case PunishmentAction.Mute:
                             if (p.Time == 0)
-                                await MuteCommands.MuteUser(user).ConfigureAwait(false);
+                                await _muteService.MuteUser(user).ConfigureAwait(false);
                             else
-                                await MuteCommands.TimedMute(user, TimeSpan.FromMinutes(p.Time)).ConfigureAwait(false);
+                                await _muteService.TimedMute(user, TimeSpan.FromMinutes(p.Time)).ConfigureAwait(false);
                             break;
                         case PunishmentAction.Kick:
                             await user.KickAsync().ConfigureAwait(false);
@@ -73,7 +83,7 @@ namespace NadekoBot.Modules.Administration
                             await guild.AddBanAsync(user).ConfigureAwait(false);
                             break;
                         case PunishmentAction.Softban:
-                            await guild.AddBanAsync(user).ConfigureAwait(false);
+                            await guild.AddBanAsync(user, 7).ConfigureAwait(false);
                             try
                             {
                                 await guild.RemoveBanAsync(user).ConfigureAwait(false);
@@ -147,7 +157,7 @@ namespace NadekoBot.Modules.Administration
                 if (page < 0)
                     return;
                 Warning[] warnings;
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     warnings = uow.Warnings.For(Context.Guild.Id, userId);
                 }
@@ -192,7 +202,7 @@ namespace NadekoBot.Modules.Administration
             [RequireUserPermission(GuildPermission.BanMembers)]
             public async Task Warnclear(ulong userId)
             {
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     await uow.Warnings.ForgiveAll(Context.Guild.Id, userId, Context.User.ToString()).ConfigureAwait(false);
                     uow.Complete();
@@ -212,27 +222,17 @@ namespace NadekoBot.Modules.Administration
                 if (number <= 0)
                     return;
 
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
-                    var ps = uow.GuildConfigs.For(Context.Guild.Id).WarnPunishments;
-                    var p = ps.FirstOrDefault(x => x.Count == number);
+                    var ps = uow.GuildConfigs.For(Context.Guild.Id, set => set.Include(x => x.WarnPunishments)).WarnPunishments;
+                    ps.RemoveAll(x => x.Count == number);
 
-                    if (p == null)
+                    ps.Add(new WarningPunishment()
                     {
-                        ps.Add(new WarningPunishment()
-                        {
-                            Count = number,
-                            Punishment = punish,
-                            Time = time,
-                        });
-                    }
-                    else
-                    {
-                        p.Count = number;
-                        p.Punishment = punish;
-                        p.Time = time;
-                        uow._context.Update(p);
-                    }
+                        Count = number,
+                        Punishment = punish,
+                        Time = time,
+                    });
                     uow.Complete();
                 }
 
@@ -249,7 +249,7 @@ namespace NadekoBot.Modules.Administration
                 if (number <= 0)
                     return;
 
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     var ps = uow.GuildConfigs.For(Context.Guild.Id, set => set.Include(x => x.WarnPunishments)).WarnPunishments;
                     var p = ps.FirstOrDefault(x => x.Count == number);
@@ -270,7 +270,7 @@ namespace NadekoBot.Modules.Administration
             public async Task WarnPunishList()
             {
                 WarningPunishment[] ps;
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     ps = uow.GuildConfigs.For(Context.Guild.Id, gc => gc.Include(x => x.WarnPunishments))
                         .WarnPunishments

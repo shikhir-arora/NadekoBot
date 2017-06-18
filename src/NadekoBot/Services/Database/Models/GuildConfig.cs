@@ -6,6 +6,9 @@ namespace NadekoBot.Services.Database.Models
     public class GuildConfig : DbEntity
     {
         public ulong GuildId { get; set; }
+
+        public string Prefix { get; set; } = null;
+
         public bool DeleteMessageOnCommand { get; set; }
         public ulong AutoAssignRoleId { get; set; }
         //greet stuff
@@ -78,6 +81,7 @@ namespace NadekoBot.Services.Database.Models
 
         public List<ShopEntry> ShopEntries { get; set; }
         public ulong? GameVoiceChannel { get; set; } = null;
+        public bool VerboseErrors { get; set; } = false;
 
         //public List<ProtectionIgnoredChannel> ProtectionIgnoredChannels { get; set; } = new List<ProtectionIgnoredChannel>();
     }

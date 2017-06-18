@@ -779,5 +779,12 @@
     "permissions_gcmd_remove": "تم تفعيل الأمر {0} على كافة السيرفرات.",
     "permissions_gmod_add": "وحدات الامر {0} تم ايقافها على كل السيرفرات",
     "permissions_gmod_remove": "وحدات الامر {0} تم تفعيلها على كل السيرفرات",
-    "permissions_lgp_none": "لا يوجد حظر للاوامر أو الوحدات النمطية"
+    "permissions_lgp_none": "لا يوجد حظر للاوامر أو الوحدات النمطية",
+    "gambling_animal_race_no_race": "سباق الحيوانات هذا ممتلئ !",
+    "utility_cant_read_or_send": "لا يمكنك قراءة أو إرسال رسائل إلى تلك القناة.",
+    "utility_quotes_notfound": "لم يتم العثور على علامات اقتباس تطابق معرف الاقتباس المحدد.",
+    "administration_prefix_current": "اعدادات التحديد على هذا السيرفر {0}",
+    "administration_prefix_new": "تم تغيير اعدادات التحديد على هذا السيرفر من {0} إلى {1}",
+    "administration_defprefix_current": "اعدادات التحديد الافتراضي للبوت هو {0}",
+    "administration_defprefix_new": "تم تغيير اعدادات التحديد الافتراضية للبوت من {0} إلى {1}"
 }

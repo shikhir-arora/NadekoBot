@@ -1,19 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Discord.Commands;
 using NadekoBot.Attributes;
-using NadekoBot.Modules.Utility.Models;
-using Newtonsoft.Json;
-using System.Threading;
 using System;
-using System.Collections.Immutable;
 using NadekoBot.Services;
 using NadekoBot.Services.Database.Models;
 using NadekoBot.Extensions;
 using Discord;
-using NLog;
+using NadekoBot.Services.Utility;
 
 namespace NadekoBot.Modules.Utility
 {
@@ -22,23 +15,26 @@ namespace NadekoBot.Modules.Utility
         [Group]
         public class PatreonCommands : NadekoSubmodule
         {
-            private static readonly PatreonThingy patreon;
+            private readonly PatreonRewardsService _patreon;
+            private readonly IBotCredentials _creds;
+            private readonly BotConfig _config;
+            private readonly DbService _db;
+            private readonly CurrencyService _currency;
 
-            static PatreonCommands()
+            public PatreonCommands(PatreonRewardsService p, IBotCredentials creds, BotConfig config, DbService db, CurrencyService currency)
             {
-                patreon = PatreonThingy.Instance;
-            }
-
-            public static void Unload()
-            {
-                patreon.Updater.Change(Timeout.Infinite, Timeout.Infinite);
+                _creds = creds;
+                _config = config;
+                _db = db;
+                _currency = currency;
+                _patreon = p;                
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [OwnerOnly]
             public async Task PatreonRewardsReload()
             {
-                await patreon.LoadPledges().ConfigureAwait(false);
+                await _patreon.LoadPledges().ConfigureAwait(false);
 
                 await Context.Channel.SendConfirmAsync("👌").ConfigureAwait(false);
             }
@@ -46,7 +42,7 @@ namespace NadekoBot.Modules.Utility
             [NadekoCommand, Usage, Description, Aliases]
             public async Task ClaimPatreonRewards()
             {
-                if (string.IsNullOrWhiteSpace(NadekoBot.Credentials.PatreonAccessToken))
+                if (string.IsNullOrWhiteSpace(_creds.PatreonAccessToken))
                     return;
                 if (DateTime.UtcNow.Day < 5)
                 {
@@ -56,7 +52,7 @@ namespace NadekoBot.Modules.Utility
                 int amount = 0;
                 try
                 {
-                    amount = await patreon.ClaimReward(Context.User.Id).ConfigureAwait(false);
+                    amount = await _patreon.ClaimReward(Context.User.Id).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -65,11 +61,11 @@ namespace NadekoBot.Modules.Utility
 
                 if (amount > 0)
                 {
-                    await ReplyConfirmLocalized("clpa_success", amount + NadekoBot.BotConfig.CurrencySign).ConfigureAwait(false);
+                    await ReplyConfirmLocalized("clpa_success", amount + _config.CurrencySign).ConfigureAwait(false);
                     return;
                 }
-                var rem = (patreon.Interval - (DateTime.UtcNow - patreon.LastUpdate));
-                var helpcmd = Format.Code(NadekoBot.ModulePrefixes[typeof(Help.Help).Name] + "donate");
+                var rem = (_patreon.Interval - (DateTime.UtcNow - _patreon.LastUpdate));
+                var helpcmd = Format.Code(Prefix + "donate");
                 await Context.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
                     .WithDescription(GetText("clpa_fail"))
                     .AddField(efb => efb.WithName(GetText("clpa_fail_already_title")).WithValue(GetText("clpa_fail_already")))
@@ -81,149 +77,5 @@ namespace NadekoBot.Modules.Utility
             }
         }
 
-        public class PatreonThingy
-        {
-            public static PatreonThingy _instance = new PatreonThingy();
-            public static PatreonThingy Instance => _instance;
-
-            private readonly SemaphoreSlim getPledgesLocker = new SemaphoreSlim(1, 1);
-
-            public ImmutableArray<PatreonUserAndReward> Pledges { get; private set; }
-            public DateTime LastUpdate { get; private set; } = DateTime.UtcNow;
-
-            public readonly Timer Updater;
-            private readonly SemaphoreSlim claimLockJustInCase = new SemaphoreSlim(1, 1);
-            private readonly Logger _log;
-
-            public readonly TimeSpan Interval = TimeSpan.FromHours(1);
-
-            private PatreonThingy()
-            {
-                if (string.IsNullOrWhiteSpace(NadekoBot.Credentials.PatreonAccessToken))
-                    return;
-                _log = LogManager.GetCurrentClassLogger();
-                Updater = new Timer(async (_) => await LoadPledges(), null, TimeSpan.Zero, Interval);
-            }
-
-            public async Task LoadPledges()
-            {
-                LastUpdate = DateTime.UtcNow;
-                await getPledgesLocker.WaitAsync(1000).ConfigureAwait(false);
-                try
-                {
-                    var rewards = new List<PatreonPledge>();
-                    var users = new List<PatreonUser>();
-                    using (var http = new HttpClient())
-                    {
-                        http.DefaultRequestHeaders.Clear();
-                        http.DefaultRequestHeaders.Add("Authorization", "Bearer " + NadekoBot.Credentials.PatreonAccessToken);
-                        var data = new PatreonData()
-                        {
-                            Links = new PatreonDataLinks()
-                            {
-                                next = "https://api.patreon.com/oauth2/api/campaigns/334038/pledges"
-                            }
-                        };
-                        do
-                        {
-                            var res = await http.GetStringAsync(data.Links.next)
-                                .ConfigureAwait(false);
-                            data = JsonConvert.DeserializeObject<PatreonData>(res);
-                            var pledgers = data.Data.Where(x => x["type"].ToString() == "pledge");
-                            rewards.AddRange(pledgers.Select(x => JsonConvert.DeserializeObject<PatreonPledge>(x.ToString()))
-                                .Where(x => x.attributes.declined_since == null));
-                            users.AddRange(data.Included
-                                .Where(x => x["type"].ToString() == "user")
-                                .Select(x => JsonConvert.DeserializeObject<PatreonUser>(x.ToString())));
-                        } while (!string.IsNullOrWhiteSpace(data.Links.next));
-                    }
-                    Pledges = rewards.Join(users, (r) => r.relationships?.patron?.data?.id, (u) => u.id, (x, y) => new PatreonUserAndReward()
-                    {
-                        User = y,
-                        Reward = x,
-                    }).ToImmutableArray();
-                }
-                catch (Exception ex)
-                {
-                    _log.Warn(ex);
-                }
-                finally
-                {
-                    var _ = Task.Run(async () =>
-                    {
-                        await Task.Delay(TimeSpan.FromMinutes(5)).ConfigureAwait(false);
-                        getPledgesLocker.Release();
-                    });
-                }
-            }
-
-            public async Task<int> ClaimReward(ulong userId)
-            {
-                await claimLockJustInCase.WaitAsync();
-                var now = DateTime.UtcNow;
-                try
-                {
-                    var data = Pledges.FirstOrDefault(x => x.User.attributes?.social_connections?.discord?.user_id == userId.ToString());
-
-                    if (data == null)
-                        return 0;
-
-                    var amount = data.Reward.attributes.amount_cents;
-
-                    using (var uow = DbHandler.UnitOfWork())
-                    {
-                        var users = uow._context.Set<RewardedUser>();
-                        var usr = users.FirstOrDefault(x => x.PatreonUserId == data.User.id);
-
-                        if (usr == null)
-                        {
-                            users.Add(new RewardedUser()
-                            {
-                                UserId = userId,
-                                PatreonUserId = data.User.id,
-                                LastReward = now,
-                                AmountRewardedThisMonth = amount,
-                            });
-
-                            await CurrencyHandler.AddCurrencyAsync(userId, "Patreon reward - new", amount, uow).ConfigureAwait(false);
-
-                            await uow.CompleteAsync().ConfigureAwait(false);
-                            return amount;
-                        }
-
-                        if (usr.LastReward.Month != now.Month)
-                        {
-                            usr.LastReward = now;
-                            usr.AmountRewardedThisMonth = amount;
-                            usr.PatreonUserId = data.User.id;
-
-                            await CurrencyHandler.AddCurrencyAsync(userId, "Patreon reward - recurring", amount, uow).ConfigureAwait(false);
-
-                            await uow.CompleteAsync().ConfigureAwait(false);
-                            return amount;
-                        }
-
-                        if ( usr.AmountRewardedThisMonth < amount)
-                        {
-                            var toAward = amount - usr.AmountRewardedThisMonth;
-
-                            usr.LastReward = now;
-                            usr.AmountRewardedThisMonth = amount;
-                            usr.PatreonUserId = data.User.id;
-
-                            await CurrencyHandler.AddCurrencyAsync(usr.UserId, "Patreon reward - update", toAward, uow).ConfigureAwait(false);
-
-                            await uow.CompleteAsync().ConfigureAwait(false);
-                            return toAward;
-                        }
-                    }
-                    return 0;
-                }
-                finally
-                {
-                    claimLockJustInCase.Release();
-                }
-            }
-        }
     }
 }

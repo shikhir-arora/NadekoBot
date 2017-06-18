@@ -779,5 +779,8 @@
     "permissions_gcmd_remove": "{0} komutu tüm sunucularda etkinleştirildi.",
     "permissions_gmod_add": "{0} modülü tüm sunucularda devre dışı bırakıldı.",
     "permissions_gmod_remove": "{0} modülü tüm sunucularda etkinleştirildi. ",
-    "permissions_lgp_none": "Bloke edilmiş komut veya modül yok."
+    "permissions_lgp_none": "Bloke edilmiş komut veya modül yok.",
+    "gambling_animal_race_no_race": "Bu Hayvan Yarışı dolu!",
+    "utility_cant_read_or_send": "Bu kanalda mesaj okuyamaz veya bu kanala mesaj gönderemezsiniz.",
+    "utility_quotes_notfound": "Belirtilen teklif kimliğine uyan teklif bulunamadı."
 }

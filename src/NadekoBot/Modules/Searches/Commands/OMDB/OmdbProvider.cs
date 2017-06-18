@@ -1,6 +1,6 @@
 ﻿using Discord;
-using Discord.API;
 using NadekoBot.Extensions;
+using NadekoBot.Services;
 using Newtonsoft.Json;
 using System;
 using System.Net.Http;
@@ -10,9 +10,9 @@ namespace NadekoBot.Modules.Searches.Commands.OMDB
 {
     public static class OmdbProvider
     {
-        private const string queryUrl =  "http://www.omdbapi.com/?t={0}&y=&plot=full&r=json";
+        private const string queryUrl = "https://omdbapi.nadekobot.me/?t={0}&y=&plot=full&r=json";
 
-        public static async Task<OmdbMovie> FindMovie(string name)
+        public static async Task<OmdbMovie> FindMovie(string name, IGoogleApiService google)
         {
             using (var http = new HttpClient())
             {
@@ -20,7 +20,7 @@ namespace NadekoBot.Modules.Searches.Commands.OMDB
                 var movie = JsonConvert.DeserializeObject<OmdbMovie>(res);
                 if (movie?.Title == null)
                     return null;
-                movie.Poster = await NadekoBot.Google.ShortenUrl(movie.Poster);
+                movie.Poster = await google.ShortenUrl(movie.Poster);
                 return movie;
             }
         }
@@ -40,7 +40,7 @@ namespace NadekoBot.Modules.Searches.Commands.OMDB
             new EmbedBuilder().WithOkColor()
                               .WithTitle(Title)
                               .WithUrl($"http://www.imdb.com/title/{ImdbId}/")
-                              .WithDescription(Plot)
+                              .WithDescription(Plot.TrimTo(1000))
                               .AddField(efb => efb.WithName("Rating").WithValue(ImdbRating).WithIsInline(true))
                               .AddField(efb => efb.WithName("Genre").WithValue(Genre).WithIsInline(true))
                               .AddField(efb => efb.WithName("Year").WithValue(Year).WithIsInline(true))

@@ -10,7 +10,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,8 +20,15 @@ namespace NadekoBot.Modules.Games
         [Group]
         public class Acropobia : NadekoSubmodule
         {
+            private readonly DiscordShardedClient _client;
+
             //channelId, game
             public static ConcurrentDictionary<ulong, AcrophobiaGame> AcrophobiaGames { get; } = new ConcurrentDictionary<ulong, AcrophobiaGame>();
+
+            public Acropobia(DiscordShardedClient client)
+            {
+                _client = client;
+            }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
@@ -32,7 +38,7 @@ namespace NadekoBot.Modules.Games
                     return;
                 var channel = (ITextChannel)Context.Channel;
 
-                var game = new AcrophobiaGame(channel, time);
+                var game = new AcrophobiaGame(_client, _strings, channel, time);
                 if (AcrophobiaGames.TryAdd(channel.Id, game))
                 {
                     try
@@ -59,6 +65,7 @@ namespace NadekoBot.Modules.Games
             Voting
         }
 
+        //todo 85 Isolate, this shouldn't print or anything like that.
         public class AcrophobiaGame
         {
             private readonly ITextChannel _channel;
@@ -79,10 +86,14 @@ namespace NadekoBot.Modules.Games
             //text, votes
             private readonly ConcurrentDictionary<string, int> _votes = new ConcurrentDictionary<string, int>();
             private readonly Logger _log;
+            private readonly DiscordShardedClient _client;
+            private readonly NadekoStrings _strings;
 
-            public AcrophobiaGame(ITextChannel channel, int time)
+            public AcrophobiaGame(DiscordShardedClient client, NadekoStrings strings, ITextChannel channel, int time)
             {
                 _log = LogManager.GetCurrentClassLogger();
+                _client = client;
+                _strings = strings;
 
                 _channel = channel;
                 _time = time;
@@ -123,7 +134,7 @@ $@"--
 
             public async Task Run()
             {
-                NadekoBot.Client.MessageReceived += PotentialAcro;
+                _client.MessageReceived += PotentialAcro;
                 var embed = GetEmbed();
 
                 //SUBMISSIONS PHASE
@@ -173,103 +184,107 @@ $@"--
                 await End().ConfigureAwait(false);
             }
 
-            private async Task PotentialAcro(SocketMessage arg)
+            private Task PotentialAcro(SocketMessage arg)
             {
-                try
+                var _ = Task.Run(async () =>
                 {
-                    var msg = arg as SocketUserMessage;
-                    if (msg == null || msg.Author.IsBot || msg.Channel.Id != _channel.Id)
-                        return;
-
-                    ++_spamCount;
-
-                    var guildUser = (IGuildUser)msg.Author;
-
-                    var input = msg.Content.ToUpperInvariant().Trim();
-
-                    if (phase == AcroPhase.Submitting)
+                    try
                     {
-                        if (_spamCount > 10)
-                        {
-                            _spamCount = 0;
-                            try { await _channel.EmbedAsync(GetEmbed()).ConfigureAwait(false); }
-                            catch { }
-                        }
-                        var inputWords = input.Split(' '); //get all words
-
-                        if (inputWords.Length != _startingLetters.Length) // number of words must be the same as the number of the starting letters
+                        var msg = arg as SocketUserMessage;
+                        if (msg == null || msg.Author.IsBot || msg.Channel.Id != _channel.Id)
                             return;
 
-                        for (int i = 0; i < _startingLetters.Length; i++)
-                        {
-                            var letter = _startingLetters[i];
+                        ++_spamCount;
 
-                            if (!inputWords[i].StartsWith(letter.ToString())) // all first letters must match
+                        var guildUser = (IGuildUser)msg.Author;
+
+                        var input = msg.Content.ToUpperInvariant().Trim();
+
+                        if (phase == AcroPhase.Submitting)
+                        {
+                            if (_spamCount > 10)
+                            {
+                                _spamCount = 0;
+                                try { await _channel.EmbedAsync(GetEmbed()).ConfigureAwait(false); }
+                                catch { }
+                            }
+                            var inputWords = input.Split(' '); //get all words
+
+                            if (inputWords.Length != _startingLetters.Length) // number of words must be the same as the number of the starting letters
                                 return;
-                        }
+
+                            for (int i = 0; i < _startingLetters.Length; i++)
+                            {
+                                var letter = _startingLetters[i];
+
+                                if (!inputWords[i].StartsWith(letter.ToString())) // all first letters must match
+                                    return;
+                            }
 
 
-                        if (!_usersWhoSubmitted.Add(guildUser.Id))
-                            return;
-                        //try adding it to the list of answers
-                        if (!_submissions.TryAdd(input, guildUser))
-                        {
-                            _usersWhoSubmitted.TryRemove(guildUser.Id);
-                            return;
-                        }
-
-                        // all good. valid input. answer recorded
-                        await _channel.SendConfirmAsync(GetText("acrophobia"),
-                            GetText("acro_submit", guildUser.Mention,
-                                _submissions.Count));
-                        try
-                        {
-                            await msg.DeleteAsync();
-                        }
-                        catch
-                        {
-                            await msg.DeleteAsync(); //try twice
-                        }
-                    }
-                    else if (phase == AcroPhase.Voting)
-                    {
-                        if (_spamCount > 10)
-                        {
-                            _spamCount = 0;
-                            try { await _channel.EmbedAsync(GetEmbed()).ConfigureAwait(false); }
-                            catch { }
-                        }
-
-                        //if (submissions.TryGetValue(input, out usr) && usr.Id != guildUser.Id)
-                        //{
-                        //    if (!usersWhoVoted.Add(guildUser.Id))
-                        //        return;
-                        //    votes.AddOrUpdate(input, 1, (key, old) => ++old);
-                        //    await channel.SendConfirmAsync("Acrophobia", $"{guildUser.Mention} cast their vote!").ConfigureAwait(false);
-                        //    await msg.DeleteAsync().ConfigureAwait(false);
-                        //    return;
-                        //}
-
-                        int num;
-                        if (int.TryParse(input, out num) && num > 0 && num <= _submissions.Count)
-                        {
-                            var kvp = _submissions.Skip(num - 1).First();
-                            var usr = kvp.Value;
-                            //can't vote for yourself, can't vote multiple times
-                            if (usr.Id == guildUser.Id || !_usersWhoVoted.Add(guildUser.Id))
+                            if (!_usersWhoSubmitted.Add(guildUser.Id))
                                 return;
-                            _votes.AddOrUpdate(kvp.Key, 1, (key, old) => ++old);
+                            //try adding it to the list of answers
+                            if (!_submissions.TryAdd(input, guildUser))
+                            {
+                                _usersWhoSubmitted.TryRemove(guildUser.Id);
+                                return;
+                            }
+
+                            // all good. valid input. answer recorded
                             await _channel.SendConfirmAsync(GetText("acrophobia"),
-                                GetText("acro_vote_cast", Format.Bold(guildUser.ToString()))).ConfigureAwait(false);
-                            await msg.DeleteAsync().ConfigureAwait(false);
+                                GetText("acro_submit", guildUser.Mention,
+                                    _submissions.Count));
+                            try
+                            {
+                                await msg.DeleteAsync();
+                            }
+                            catch
+                            {
+                                await msg.DeleteAsync(); //try twice
+                            }
                         }
+                        else if (phase == AcroPhase.Voting)
+                        {
+                            if (_spamCount > 10)
+                            {
+                                _spamCount = 0;
+                                try { await _channel.EmbedAsync(GetEmbed()).ConfigureAwait(false); }
+                                catch { }
+                            }
 
+                            //if (submissions.TryGetValue(input, out usr) && usr.Id != guildUser.Id)
+                            //{
+                            //    if (!usersWhoVoted.Add(guildUser.Id))
+                            //        return;
+                            //    votes.AddOrUpdate(input, 1, (key, old) => ++old);
+                            //    await channel.SendConfirmAsync("Acrophobia", $"{guildUser.Mention} cast their vote!").ConfigureAwait(false);
+                            //    await msg.DeleteAsync().ConfigureAwait(false);
+                            //    return;
+                            //}
+
+                            int num;
+                            if (int.TryParse(input, out num) && num > 0 && num <= _submissions.Count)
+                            {
+                                var kvp = _submissions.Skip(num - 1).First();
+                                var usr = kvp.Value;
+                                //can't vote for yourself, can't vote multiple times
+                                if (usr.Id == guildUser.Id || !_usersWhoVoted.Add(guildUser.Id))
+                                    return;
+                                _votes.AddOrUpdate(kvp.Key, 1, (key, old) => ++old);
+                                await _channel.SendConfirmAsync(GetText("acrophobia"),
+                                    GetText("acro_vote_cast", Format.Bold(guildUser.ToString()))).ConfigureAwait(false);
+                                await msg.DeleteAsync().ConfigureAwait(false);
+                            }
+
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    _log.Warn(ex);
-                }
+                    catch (Exception ex)
+                    {
+                        _log.Warn(ex);
+                    }
+                });
+                return Task.CompletedTask;
             }
 
             public async Task End()
@@ -292,14 +307,14 @@ $@"--
 
             public void EnsureStopped()
             {
-                NadekoBot.Client.MessageReceived -= PotentialAcro;
+                _client.MessageReceived -= PotentialAcro;
                 if (!_source.IsCancellationRequested)
                     _source.Cancel();
             }
 
             private string GetText(string key, params object[] replacements)
-                => GetTextStatic(key,
-                    NadekoBot.Localization.GetCultureInfo(_channel.Guild),
+                => _strings.GetText(key,
+                    _channel.Guild.Id,
                     typeof(Games).Name.ToLowerInvariant(),
                     replacements);
         }

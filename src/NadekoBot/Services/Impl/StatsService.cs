@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,9 +14,10 @@ namespace NadekoBot.Services.Impl
     public class StatsService : IStatsService
     {
         private readonly DiscordShardedClient _client;
+        private readonly IBotCredentials _creds;
         private readonly DateTime _started;
 
-        public const string BotVersion = "1.4";
+        public const string BotVersion = "1.43";
 
         public string Author => "Kwoth#2560";
         public string Library => "Discord.Net";
@@ -36,31 +36,37 @@ namespace NadekoBot.Services.Impl
 
         private readonly Timer _carbonitexTimer;
 
-        public StatsService(DiscordShardedClient client, CommandHandler cmdHandler)
+        public StatsService(DiscordShardedClient client, CommandHandler cmdHandler, IBotCredentials creds)
         {
-
             _client = client;
+            _creds = creds;
 
-            _started = DateTime.Now;
+            _started = DateTime.UtcNow;
             _client.MessageReceived += _ => Task.FromResult(Interlocked.Increment(ref _messageCounter));
             cmdHandler.CommandExecuted += (_, e) => Task.FromResult(Interlocked.Increment(ref _commandsRan));
 
             _client.ChannelCreated += (c) =>
             {
-                if (c is ITextChannel)
-                    Interlocked.Increment(ref _textChannels);
-                else if (c is IVoiceChannel)
-                    Interlocked.Increment(ref _voiceChannels);
+                var _ = Task.Run(() =>
+                {
+                    if (c is ITextChannel)
+                        Interlocked.Increment(ref _textChannels);
+                    else if (c is IVoiceChannel)
+                        Interlocked.Increment(ref _voiceChannels);
+                });
 
                 return Task.CompletedTask;
             };
 
             _client.ChannelDestroyed += (c) =>
             {
-                if (c is ITextChannel)
-                    Interlocked.Decrement(ref _textChannels);
-                else if (c is IVoiceChannel)
-                    Interlocked.Decrement(ref _voiceChannels);
+                var _ = Task.Run(() =>
+                {
+                    if (c is ITextChannel)
+                        Interlocked.Decrement(ref _textChannels);
+                    else if (c is IVoiceChannel)
+                        Interlocked.Decrement(ref _voiceChannels);
+                });
 
                 return Task.CompletedTask;
             };
@@ -117,7 +123,7 @@ namespace NadekoBot.Services.Impl
 
             _carbonitexTimer = new Timer(async (state) =>
             {
-                if (string.IsNullOrWhiteSpace(NadekoBot.Credentials.CarbonKey))
+                if (string.IsNullOrWhiteSpace(_creds.CarbonKey))
                     return;
                 try
                 {
@@ -126,7 +132,7 @@ namespace NadekoBot.Services.Impl
                         using (var content = new FormUrlEncodedContent(
                             new Dictionary<string, string> {
                                 { "servercount", _client.Guilds.Count.ToString() },
-                                { "key", NadekoBot.Credentials.CarbonKey }}))
+                                { "key", _creds.CarbonKey }}))
                         {
                             content.Headers.Clear();
                             content.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
@@ -158,7 +164,7 @@ namespace NadekoBot.Services.Impl
 Author: [{Author}] | Library: [{Library}]
 Bot Version: [{BotVersion}]
 Bot ID: {curUser.Id}
-Owner ID(s): {string.Join(", ", NadekoBot.Credentials.OwnerIds)}
+Owner ID(s): {string.Join(", ", _creds.OwnerIds)}
 Uptime: {GetUptimeString()}
 Servers: {_client.Guilds.Count} | TextChannels: {TextChannels} | VoiceChannels: {VoiceChannels}
 Commands Ran this session: {CommandsRan}
@@ -166,7 +172,7 @@ Messages: {MessageCounter} [{MessagesPerSecond:F2}/sec] Heap: [{Heap} MB]");
         }
 
         public TimeSpan GetUptime() =>
-            DateTime.Now - _started;
+            DateTime.UtcNow - _started;
 
         public string GetUptimeString(string separator = ", ")
         {

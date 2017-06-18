@@ -32,7 +32,7 @@ namespace NadekoBot.Services.Impl
                     ? "d0bd7768e3a1a2d15430f0dccb871117"
                     : _soundcloudClientId;
             }
-            set {
+            private set {
                 _soundcloudClientId = value;
             }
         }
@@ -61,7 +61,11 @@ namespace NadekoBot.Services.Impl
 
                 Token = data[nameof(Token)];
                 if (string.IsNullOrWhiteSpace(Token))
-                    throw new ArgumentNullException(nameof(Token), "Token is missing from credentials.json or Environment varibles.");
+                {
+                    _log.Error("Token is missing from credentials.json or Environment varibles. Add it and restart the program.");
+                    Console.ReadKey();
+                    Environment.Exit(3);
+                }
                 OwnerIds = data.GetSection("OwnerIds").GetChildren().Select(c => ulong.Parse(c.Value)).ToImmutableArray();
                 LoLApiKey = data[nameof(LoLApiKey)];
                 GoogleApiKey = data[nameof(GoogleApiKey)];
@@ -77,7 +81,11 @@ namespace NadekoBot.Services.Impl
                 ulong.TryParse(data[nameof(ClientId)], out clId);
                 ClientId = clId;
 
-                SoundCloudClientId = data[nameof(SoundCloudClientId)];
+                var scId = data[nameof(SoundCloudClientId)];
+                SoundCloudClientId = scId;
+                //SoundCloudClientId = string.IsNullOrWhiteSpace(scId)
+                //    ? 
+                //    : scId;
                 CarbonKey = data[nameof(CarbonKey)];
                 var dbSection = data.GetSection("db");
                 Db = new DBConfig(string.IsNullOrWhiteSpace(dbSection["Type"]) 

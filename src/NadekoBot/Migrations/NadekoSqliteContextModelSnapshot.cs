@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using NadekoBot.Services.Database;
 using NadekoBot.Services.Database.Models;
-using NadekoBot.Modules.Music.Classes;
 
 namespace NadekoBot.Migrations
 {
@@ -15,7 +14,7 @@ namespace NadekoBot.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
             modelBuilder
-                .HasAnnotation("ProductVersion", "1.1.0-rtm-22752");
+                .HasAnnotation("ProductVersion", "1.1.1");
 
             modelBuilder.Entity("NadekoBot.Services.Database.Models.AntiRaidSetting", b =>
                 {
@@ -138,6 +137,8 @@ namespace NadekoBot.Migrations
 
                     b.Property<int>("CurrencyDropAmount");
 
+                    b.Property<int?>("CurrencyDropAmountMax");
+
                     b.Property<float>("CurrencyGenerationChance");
 
                     b.Property<int>("CurrencyGenerationCooldown");
@@ -148,9 +149,13 @@ namespace NadekoBot.Migrations
 
                     b.Property<string>("CurrencySign");
 
+                    b.Property<bool>("CustomReactionsStartWith");
+
                     b.Property<string>("DMHelpString");
 
                     b.Property<DateTime?>("DateAdded");
+
+                    b.Property<string>("DefaultPrefix");
 
                     b.Property<string>("ErrorColor");
 
@@ -167,6 +172,8 @@ namespace NadekoBot.Migrations
                     b.Property<int>("MinimumBetAmount");
 
                     b.Property<string>("OkColor");
+
+                    b.Property<int>("PermissionVersion");
 
                     b.Property<string>("RemindMessageFormat");
 
@@ -569,6 +576,8 @@ namespace NadekoBot.Migrations
 
                     b.Property<string>("PermissionRole");
 
+                    b.Property<string>("Prefix");
+
                     b.Property<int?>("RootPermissionId");
 
                     b.Property<bool>("SendChannelByeMessage");
@@ -578,6 +587,8 @@ namespace NadekoBot.Migrations
                     b.Property<bool>("SendDmGreetMessage");
 
                     b.Property<string>("TimeZoneId");
+
+                    b.Property<bool>("VerboseErrors");
 
                     b.Property<bool>("VerbosePermissions");
 
@@ -613,6 +624,8 @@ namespace NadekoBot.Migrations
                     b.Property<TimeSpan>("Interval");
 
                     b.Property<string>("Message");
+
+                    b.Property<TimeSpan?>("StartTimeOfDay");
 
                     b.HasKey("Id");
 

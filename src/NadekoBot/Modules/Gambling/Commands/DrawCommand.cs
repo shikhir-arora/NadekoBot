@@ -1,9 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
-using ImageSharp;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Modules.Gambling.Models;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -18,17 +18,17 @@ namespace NadekoBot.Modules.Gambling
         public class DrawCommands : NadekoSubmodule
         {
             private static readonly ConcurrentDictionary<IGuild, Cards> _allDecks = new ConcurrentDictionary<IGuild, Cards>();
-
             private const string _cardsPath = "data/images/cards";
 
-            [NadekoCommand, Usage, Description, Aliases]
-            [RequireContext(ContextType.Guild)]
-            public async Task Draw(int num = 1)
+            
+            private async Task<(Stream ImageStream, string ToSend)> InternalDraw(int num, ulong? guildId = null)
             {
-                var cards = _allDecks.GetOrAdd(Context.Guild, (s) => new Cards());
+                if (num < 1 || num > 10)
+                    throw new ArgumentOutOfRangeException(nameof(num));
+
+                Cards cards = guildId == null ? new Cards() : _allDecks.GetOrAdd(Context.Guild, (s) => new Cards());
                 var images = new List<Image>();
                 var cardObjects = new List<Cards.Card>();
-                if (num > 5) num = 5;
                 for (var i = 0; i < num; i++)
                 {
                     if (cards.CardPool.Count == 0 && i != 0)
@@ -45,22 +45,48 @@ namespace NadekoBot.Modules.Gambling
                     }
                     var currentCard = cards.DrawACard();
                     cardObjects.Add(currentCard);
-                    using (var stream = File.OpenRead(Path.Combine(_cardsPath, currentCard.ToString().ToLowerInvariant()+ ".jpg").Replace(' ','_')))
+                    using (var stream = File.OpenRead(Path.Combine(_cardsPath, currentCard.ToString().ToLowerInvariant() + ".jpg").Replace(' ', '_')))
                         images.Add(new Image(stream));
                 }
                 MemoryStream bitmapStream = new MemoryStream();
                 images.Merge().Save(bitmapStream);
                 bitmapStream.Position = 0;
+
                 var toSend = $"{Context.User.Mention}";
                 if (cardObjects.Count == 5)
                     toSend += $" drew `{Cards.GetHandValue(cardObjects)}`";
 
-                await Context.Channel.SendFileAsync(bitmapStream, images.Count + " cards.jpg", toSend).ConfigureAwait(false);
+                return (bitmapStream, toSend);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task ShuffleDeck()
+            public async Task Draw(int num = 1)
+            {
+                if (num < 1)
+                    num = 1;
+                if (num > 10)
+                    num = 10;
+
+                var data = await InternalDraw(num, Context.Guild.Id).ConfigureAwait(false);
+                await Context.Channel.SendFileAsync(data.ImageStream, num + " cards.jpg", data.ToSend).ConfigureAwait(false);
+            }
+
+            [NadekoCommand, Usage, Description, Aliases]
+            public async Task DrawNew(int num = 1)
+            {
+                if (num < 1)
+                    num = 1;
+                if (num > 10)
+                    num = 10;
+
+                var data = await InternalDraw(num).ConfigureAwait(false);
+                await Context.Channel.SendFileAsync(data.ImageStream, num + " cards.jpg", data.ToSend).ConfigureAwait(false);
+            }
+
+            [NadekoCommand, Usage, Description, Aliases]
+            [RequireContext(ContextType.Guild)]
+            public async Task DeckShuffle()
             {
                 //var channel = (ITextChannel)Context.Channel;
 

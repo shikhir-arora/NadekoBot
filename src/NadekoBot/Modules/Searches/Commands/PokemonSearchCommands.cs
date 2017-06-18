@@ -2,11 +2,8 @@
 using Discord.Commands;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
-using NadekoBot.Modules.Searches.Models;
-using Newtonsoft.Json;
-using NLog;
+using NadekoBot.Services.Searches;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -17,28 +14,14 @@ namespace NadekoBot.Modules.Searches
         [Group]
         public class PokemonSearchCommands : NadekoSubmodule
         {
-            private static Dictionary<string, SearchPokemon> pokemons { get; } = new Dictionary<string, SearchPokemon>();
-            private static Dictionary<string, SearchPokemonAbility> pokemonAbilities { get; } = new Dictionary<string, SearchPokemonAbility>();
+            private readonly SearchesService _searches;
 
-            public const string PokemonAbilitiesFile = "data/pokemon/pokemon_abilities7.json";
+            public Dictionary<string, SearchPokemon> Pokemons => _searches.Pokemons;
+            public Dictionary<string, SearchPokemonAbility> PokemonAbilities => _searches.PokemonAbilities;
 
-            public const string PokemonListFile = "data/pokemon/pokemon_list7.json";
-            private new static readonly Logger _log;
-
-            static PokemonSearchCommands()
+            public PokemonSearchCommands(SearchesService searches)
             {
-                _log = LogManager.GetCurrentClassLogger();
-
-                if (File.Exists(PokemonListFile))
-                {
-                    pokemons = JsonConvert.DeserializeObject<Dictionary<string, SearchPokemon>>(File.ReadAllText(PokemonListFile));
-                }
-                else
-                    _log.Warn(PokemonListFile + " is missing. Pokemon abilities not loaded.");
-                if (File.Exists(PokemonAbilitiesFile))
-                    pokemonAbilities = JsonConvert.DeserializeObject<Dictionary<string, SearchPokemonAbility>>(File.ReadAllText(PokemonAbilitiesFile));
-                else
-                    _log.Warn(PokemonAbilitiesFile + " is missing. Pokemon abilities not loaded.");
+                _searches = searches;
             }
 
             [NadekoCommand, Usage, Description, Aliases]
@@ -48,7 +31,7 @@ namespace NadekoBot.Modules.Searches
                 if (string.IsNullOrWhiteSpace(pokemon))
                     return;
 
-                foreach (var kvp in pokemons)
+                foreach (var kvp in Pokemons)
                 {
                     if (kvp.Key.ToUpperInvariant() == pokemon.ToUpperInvariant())
                     {
@@ -71,7 +54,7 @@ namespace NadekoBot.Modules.Searches
                 ability = ability?.Trim().ToUpperInvariant().Replace(" ", "");
                 if (string.IsNullOrWhiteSpace(ability))
                     return;
-                foreach (var kvp in pokemonAbilities)
+                foreach (var kvp in PokemonAbilities)
                 {
                     if (kvp.Key.ToUpperInvariant() == ability)
                     {
