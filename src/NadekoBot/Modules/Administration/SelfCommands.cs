@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Discord.WebSocket;
 using NadekoBot.Services;
 using NadekoBot.Services.Database.Models;
@@ -51,6 +52,13 @@ namespace NadekoBot.Modules.Administration
             [OwnerOnly]
             public async Task StartupCommandAdd([Remainder] string cmdText)
             {
+             
+            var x = Regex.Match(cmdText, @"^([\W]*die)(.*)"
+                ).Groups[0].Value;
+                
+            if (x.EndsWith("die", StringComparison.OrdinalIgnoreCase)) { 
+                return; 
+                
                 var guser = ((IGuildUser)Context.User);
                 var cmd = new StartupCommand()
                 {
