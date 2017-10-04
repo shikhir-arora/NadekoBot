@@ -8,32 +8,34 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using NadekoBot.Modules.Permissions;
-using NadekoBot.TypeReaders;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using NadekoBot.Services.Database.Models;
 using System.Threading;
-using NadekoBot.Services.Searches;
-using NadekoBot.Services.ClashOfClans;
-using NadekoBot.Services.Music;
-using NadekoBot.Services.CustomReactions;
-using NadekoBot.Services.Games;
-using NadekoBot.Services.Administration;
-using NadekoBot.Services.Permissions;
-using NadekoBot.Services.Utility;
-using NadekoBot.Services.Help;
 using System.IO;
-using NadekoBot.Services.Pokemon;
-using NadekoBot.DataStructures.ShardCom;
-using NadekoBot.DataStructures;
 using NadekoBot.Extensions;
+using System.Collections.Generic;
+using NadekoBot.Common;
+using NadekoBot.Common.ShardCom;
+using NadekoBot.Common.TypeReaders;
+using NadekoBot.Common.TypeReaders.Models;
+using NadekoBot.Services.Database;
+using StackExchange.Redis;
+using Newtonsoft.Json;
 
 namespace NadekoBot
 {
     public class NadekoBot
     {
         private Logger _log;
+
+        public BotCredentials Credentials { get; }
+
+        public DiscordSocketClient Client { get; }
+        public CommandService CommandService { get; }
+
+        private readonly DbService _db;
+        public ImmutableArray<GuildConfig> AllGuildConfigs { get; private set; }
 
         /* I don't know how to make this not be static
          * and keep the convenience of .WithOkColor
@@ -44,54 +46,38 @@ namespace NadekoBot
         public static Color OkColor { get; private set; }
         public static Color ErrorColor { get; private set; }
 
-        public ImmutableArray<GuildConfig> AllGuildConfigs { get; private set; }
-        public BotConfig BotConfig { get; }
-        public DbService Db { get; }
-        public CommandService CommandService { get; }
-        public CommandHandler CommandHandler { get; private set; }
-        public Localization Localization { get; private set; }
-        public NadekoStrings Strings { get; private set; }
-        public StatsService Stats { get; private set; }
-        public ImagesService Images { get; }
-        public CurrencyService Currency { get; }
-        public GoogleApiService GoogleApi { get; }
-
-        public DiscordSocketClient Client { get; }
-        public bool Ready { get; private set; }
+        public TaskCompletionSource<bool> Ready { get; private set; } = new TaskCompletionSource<bool>();
 
         public INServiceProvider Services { get; private set; }
-        public BotCredentials Credentials { get; }
 
-        public int ShardId { get; }
         public ShardsCoordinator ShardCoord { get; private set; }
 
         private readonly ShardComClient _comClient;
+
+        private readonly BotConfig _botConfig;
 
         public NadekoBot(int shardId, int parentProcessId, int? port = null)
         {
             if (shardId < 0)
                 throw new ArgumentOutOfRangeException(nameof(shardId));
 
-            ShardId = shardId;
+            //var obj = JsonConvert.DeserializeObject<Dictionary<string, CommandData2>>(File.ReadAllText("./data/command_strings.json"))
+            //    .ToDictionary(x => x.Key, x => new CommandData2
+            //    {
+            //        Cmd = x.Value.Cmd,
+            //        Desc = x.Value.Desc,
+            //        Usage = x.Value.Usage.Select(y => y.Substring(1, y.Length - 2)).ToArray(),
+            //    });
+
+            //File.WriteAllText("./data/command_strings.json", JsonConvert.SerializeObject(obj, Formatting.Indented));
+            
 
             LogSetup.SetupLogger();
             _log = LogManager.GetCurrentClassLogger();
             TerribleElevatedPermissionCheck();
 
             Credentials = new BotCredentials();
-
-            port = port ?? Credentials.ShardRunPort;
-            _comClient = new ShardComClient(port.Value);
-
-            Db = new DbService(Credentials);
-
-            using (var uow = Db.UnitOfWork)
-            {
-                BotConfig = uow.BotConfig.GetOrCreate();
-                OkColor = new Color(Convert.ToUInt32(BotConfig.OkColor, 16));
-                ErrorColor = new Color(Convert.ToUInt32(BotConfig.ErrorColor, 16));
-            }
-            
+            _db = new DbService(Credentials);
             Client = new DiscordSocketClient(new DiscordSocketConfig
             {
                 MessageCacheSize = 10,
@@ -101,18 +87,23 @@ namespace NadekoBot
                 ShardId = shardId,
                 AlwaysDownloadUsers = false,
             });
-
             CommandService = new CommandService(new CommandServiceConfig()
             {
                 CaseSensitiveCommands = false,
                 DefaultRunMode = RunMode.Sync,
             });
-            
-            Images = new ImagesService();
-            Currency = new CurrencyService(BotConfig, Db);
-            GoogleApi = new GoogleApiService(Credentials);
 
-            SetupShard(shardId, parentProcessId, port.Value);
+            port = port ?? Credentials.ShardRunPort;
+            _comClient = new ShardComClient(port.Value);
+
+            using (var uow = _db.UnitOfWork)
+            {
+                _botConfig = uow.BotConfig.GetOrCreate();
+                OkColor = new Color(Convert.ToUInt32(_botConfig.OkColor, 16));
+                ErrorColor = new Color(Convert.ToUInt32(_botConfig.ErrorColor, 16));
+            }
+
+            SetupShard(parentProcessId, port.Value);
 
 #if GLOBAL_NADEKO
             Client.Log += Client_Log;
@@ -130,8 +121,9 @@ namespace NadekoBot
                         ConnectionState = Client.ConnectionState,
                         Guilds = Client.ConnectionState == ConnectionState.Connected ? Client.Guilds.Count : 0,
                         ShardId = Client.ShardId,
+                        Time = DateTime.UtcNow,
                     });
-                    await Task.Delay(1000);
+                    await Task.Delay(5000);
                 }
             });
         }
@@ -141,146 +133,40 @@ namespace NadekoBot
             var startingGuildIdList = Client.Guilds.Select(x => (long)x.Id).ToList();
 
             //this unit of work will be used for initialization of all modules too, to prevent multiple queries from running
-            using (var uow = Db.UnitOfWork)
+            using (var uow = _db.UnitOfWork)
             {
                 AllGuildConfigs = uow.GuildConfigs.GetAllGuildConfigs(startingGuildIdList).ToImmutableArray();
-                
-                Localization = new Localization(BotConfig.Locale, AllGuildConfigs.ToDictionary(x => x.GuildId, x => x.Locale), Db);
-                Strings = new NadekoStrings(Localization);
-                CommandHandler = new CommandHandler(Client, Db, BotConfig, AllGuildConfigs, CommandService, Credentials, this);
-                Stats = new StatsService(Client, CommandHandler, Credentials, ShardCoord);
 
-                var soundcloudApiService = new SoundCloudApiService(Credentials);
+                IBotConfigProvider botConfigProvider = new BotConfigProvider(_db, _botConfig);
 
-                #region help
-                var helpService = new HelpService(BotConfig, CommandHandler, Strings);
-                #endregion
-
-                //module services
-                //todo 90 - autodiscover, DI, and add instead of manual like this
-                #region utility
-                var remindService = new RemindService(Client, BotConfig, Db, startingGuildIdList, uow);
-                var repeaterService = new MessageRepeaterService(this, Client, AllGuildConfigs);
-                //var converterService = new ConverterService(Db);
-                var commandMapService = new CommandMapService(AllGuildConfigs);
-                var patreonRewardsService = new PatreonRewardsService(Credentials, Db, Currency, Client);
-                var verboseErrorsService = new VerboseErrorsService(AllGuildConfigs, Db, CommandHandler, helpService);
-                var pruneService = new PruneService();
-                #endregion
-
-                #region permissions
-                var permissionsService = new PermissionService(Client, Db, BotConfig, CommandHandler, Strings);
-                var blacklistService = new BlacklistService(BotConfig);
-                var cmdcdsService = new CmdCdService(AllGuildConfigs);
-                var filterService = new FilterService(Client, AllGuildConfigs);
-                var globalPermsService = new GlobalPermissionService(BotConfig);
-                #endregion
-
-                #region Searches
-                var searchesService = new SearchesService(Client, GoogleApi, Db);
-                var streamNotificationService = new StreamNotificationService(Db, Client, Strings);
-                var animeSearchService = new AnimeSearchService();
-                #endregion
-
-                var clashService = new ClashOfClansService(Client, Db, Localization, Strings, uow, startingGuildIdList);
-                var musicService = new MusicService(Client, GoogleApi, Strings, Localization, Db, soundcloudApiService, Credentials, AllGuildConfigs);
-                var crService = new CustomReactionsService(permissionsService, Db, Strings, Client, CommandHandler, BotConfig, uow);
-
-                #region Games
-                var gamesService = new GamesService(Client, BotConfig, AllGuildConfigs, Strings, Images, CommandHandler);
-                var chatterBotService = new ChatterBotService(Client, permissionsService, AllGuildConfigs, CommandHandler, Strings);
-                var pollService = new PollService(Client, Strings);
-                #endregion
-
-                #region administration
-                var administrationService = new AdministrationService(AllGuildConfigs, CommandHandler);
-                var greetSettingsService = new GreetSettingsService(Client, AllGuildConfigs, Db);
-                var selfService = new SelfService(Client, this, CommandHandler, Db, BotConfig, Localization, Strings, Credentials);
-                var vcRoleService = new VcRoleService(Client, AllGuildConfigs, Db);
-                var vPlusTService = new VplusTService(Client, AllGuildConfigs, Strings, Db);
-                var muteService = new MuteService(Client, AllGuildConfigs, Db);
-                var ratelimitService = new SlowmodeService(Client, AllGuildConfigs);
-                var protectionService = new ProtectionService(Client, AllGuildConfigs, muteService);
-                var playingRotateService = new PlayingRotateService(Client, BotConfig, musicService, Db);
-                var gameVcService = new GameVoiceChannelService(Client, Db, AllGuildConfigs);
-                var autoAssignRoleService = new AutoAssignRoleService(Client, AllGuildConfigs);
-                var logCommandService = new LogCommandService(Client, Strings, AllGuildConfigs, Db, muteService, protectionService);
-                var guildTimezoneService = new GuildTimezoneService(AllGuildConfigs, Db);
-                #endregion
-
-                #region pokemon 
-                var pokemonService = new PokemonService();
-                #endregion
-
-
+                //var localization = new Localization(_botConfig.Locale, AllGuildConfigs.ToDictionary(x => x.GuildId, x => x.Locale), Db);
 
                 //initialize Services
                 Services = new NServiceProvider.ServiceProviderBuilder()
-                    .Add<ILocalization>(Localization)
-                    .Add<IStatsService>(Stats)
-                    .Add<IImagesService>(Images)
-                    .Add<IGoogleApiService>(GoogleApi)
-                    .Add<IStatsService>(Stats)
-                    .Add<IBotCredentials>(Credentials)
-                    .Add<CommandService>(CommandService)
-                    .Add<NadekoStrings>(Strings)
-                    .Add<DiscordSocketClient>(Client)
-                    .Add<BotConfig>(BotConfig)
-                    .Add<CurrencyService>(Currency)
-                    .Add<CommandHandler>(CommandHandler)
-                    .Add<DbService>(Db)
-                        //modules
-                        .Add(commandMapService)
-                        .Add(remindService)
-                        .Add(repeaterService)
-                        //.Add(converterService)
-                        .Add(verboseErrorsService)
-                        .Add(patreonRewardsService)
-                        .Add(pruneService)
-                    .Add<SearchesService>(searchesService)
-                        .Add(streamNotificationService)
-                        .Add(animeSearchService)
-                    .Add<ClashOfClansService>(clashService)
-                    .Add<MusicService>(musicService)
-                    .Add<GreetSettingsService>(greetSettingsService)
-                    .Add<CustomReactionsService>(crService)
-                    .Add<HelpService>(helpService)
-                    .Add<GamesService>(gamesService)
-                        .Add(chatterBotService)
-                        .Add(pollService)
-                    .Add<AdministrationService>(administrationService)
-                        .Add(selfService)
-                        .Add(vcRoleService)
-                        .Add(vPlusTService)
-                        .Add(muteService)
-                        .Add(ratelimitService)
-                        .Add(playingRotateService)
-                        .Add(gameVcService)
-                        .Add(autoAssignRoleService)
-                        .Add(protectionService)
-                        .Add(logCommandService)
-                        .Add(guildTimezoneService)
-                    .Add<PermissionService>(permissionsService)
-                        .Add(blacklistService)
-                        .Add(cmdcdsService)
-                        .Add(filterService)
-                        .Add(globalPermsService)
-                    .Add<PokemonService>(pokemonService)
-                    .Add<NadekoBot>(this)
+                    .AddManual<IBotCredentials>(Credentials)
+                    .AddManual(_db)
+                    .AddManual(Client)
+                    .AddManual(CommandService)
+                    .AddManual(botConfigProvider)
+                    //.AddManual<ILocalization>(localization)
+                    .AddManual<IEnumerable<GuildConfig>>(AllGuildConfigs) //todo wrap this
+                    .AddManual<NadekoBot>(this)
+                    .AddManual<IUnitOfWork>(uow)
+                    .AddManual<IDataCache>(new RedisCache(Client.CurrentUser.Id))
+                    .LoadFrom(Assembly.GetEntryAssembly())
                     .Build();
 
-
-                CommandHandler.AddServices(Services);
+                var commandHandler = Services.GetService<CommandHandler>();
+                commandHandler.AddServices(Services);
 
                 //setup typereaders
                 CommandService.AddTypeReader<PermissionAction>(new PermissionActionTypeReader());
-                CommandService.AddTypeReader<CommandInfo>(new CommandTypeReader(CommandService, CommandHandler));
-                CommandService.AddTypeReader<CommandOrCrInfo>(new CommandOrCrTypeReader(crService, CommandService, CommandHandler));
+                CommandService.AddTypeReader<CommandInfo>(new CommandTypeReader());
+                CommandService.AddTypeReader<CommandOrCrInfo>(new CommandOrCrTypeReader());
                 CommandService.AddTypeReader<ModuleInfo>(new ModuleTypeReader(CommandService));
                 CommandService.AddTypeReader<ModuleOrCrInfo>(new ModuleOrCrTypeReader(CommandService));
                 CommandService.AddTypeReader<IGuild>(new GuildTypeReader(Client));
-                CommandService.AddTypeReader<GuildDateTime>(new GuildDateTimeTypeReader(guildTimezoneService));
-
+                CommandService.AddTypeReader<GuildDateTime>(new GuildDateTimeTypeReader());
             }
         }
 
@@ -313,29 +199,43 @@ namespace NadekoBot
             }
 
             //connect
-            _log.Info("Shard {0} logging in ...", ShardId);
+            _log.Info("Shard {0} logging in ...", Client.ShardId);
             await Client.LoginAsync(TokenType.Bot, token).ConfigureAwait(false);
             await Client.StartAsync().ConfigureAwait(false);
             Client.Ready += SetClientReady;
             await clientReady.Task.ConfigureAwait(false);
             Client.Ready -= SetClientReady;
-            _log.Info("Shard {0} logged in.", ShardId);
+            Client.JoinedGuild += Client_JoinedGuild;
+            Client.LeftGuild += Client_LeftGuild;
+            _log.Info("Shard {0} logged in.", Client.ShardId);
+        }
+
+        private Task Client_LeftGuild(SocketGuild arg)
+        {
+            _log.Info("Left server: {0} [{1}]", arg?.Name, arg?.Id);
+            return Task.CompletedTask;
+        }
+
+        private Task Client_JoinedGuild(SocketGuild arg)
+        {
+            _log.Info("Joined server: {0} [{1}]", arg?.Name, arg?.Id);
+            return Task.CompletedTask;
         }
 
         public async Task RunAsync(params string[] args)
         {
-            if(ShardId == 0)
+            if(Client.ShardId == 0)
             _log.Info("Starting NadekoBot v" + StatsService.BotVersion);
 
             var sw = Stopwatch.StartNew();
 
             await LoginAsync(Credentials.Token).ConfigureAwait(false);
 
-            _log.Info($"Shard {ShardId} loading services...");
+            _log.Info($"Shard {Client.ShardId} loading services...");
             AddServices();
 
             sw.Stop();
-            _log.Info($"Shard {ShardId} connected in {sw.Elapsed.TotalSeconds:F2}s");
+            _log.Info($"Shard {Client.ShardId} connected in {sw.Elapsed.TotalSeconds:F2}s");
 
             var stats = Services.GetService<IStatsService>();
             stats.Initialize();
@@ -352,13 +252,6 @@ namespace NadekoBot
 #if GLOBAL_NADEKO
             isPublicNadeko = true;
 #endif
-            //Console.WriteLine(string.Join(", ", CommandService.Commands
-            //    .Distinct(x => x.Name + x.Module.Name)
-            //    .SelectMany(x => x.Aliases)
-            //    .GroupBy(x => x)
-            //    .Where(x => x.Count() > 1)
-            //    .Select(x => x.Key + $"({x.Count()})")));
-
             //unload modules which are not available on the public bot
 
             if(isPublicNadeko)
@@ -368,8 +261,9 @@ namespace NadekoBot
                     .Where(x => x.Preconditions.Any(y => y.GetType() == typeof(NoPublicBot)))
                     .ForEach(x => CommandService.RemoveModuleAsync(x));
 
-            Ready = true;
-            _log.Info($"Shard {ShardId} ready.");
+            Ready.TrySetResult(true);
+            HandleStatusChanges();
+            _log.Info($"Shard {Client.ShardId} ready.");
             //_log.Info(await stats.Print().ConfigureAwait(false));
         }
 
@@ -409,29 +303,73 @@ namespace NadekoBot
             }
         }
 
-        private void SetupShard(int shardId, int parentProcessId, int port)
+        private void SetupShard(int parentProcessId, int port)
         {
-            if (shardId != 0)
-            {
-                new Thread(new ThreadStart(() =>
-                {
-                    try
-                    {
-                        var p = Process.GetProcessById(parentProcessId);
-                        if (p == null)
-                            return;
-                        p.WaitForExit();
-                    }
-                    finally
-                    {
-                        Environment.Exit(10);
-                    }
-                })).Start();
-            }
-            else
+            if (Client.ShardId == 0)
             {
                 ShardCoord = new ShardsCoordinator(port);
+                return;
             }
+            new Thread(new ThreadStart(() =>
+            {
+                try
+                {
+                    var p = Process.GetProcessById(parentProcessId);
+                    if (p == null)
+                        return;
+                    p.WaitForExit();
+                }
+                finally
+                {
+                    Environment.Exit(10);
+                }
+            })).Start();
+        }
+
+        private void HandleStatusChanges()
+        {
+            var sub = Services.GetService<IDataCache>().Redis.GetSubscriber();
+            sub.Subscribe(Client.CurrentUser.Id + "_status.game_set", async (ch, game) =>
+            {
+                try
+                {
+                    var obj = new { Name = default(string) };
+                    obj = JsonConvert.DeserializeAnonymousType(game, obj);
+                    await Client.SetGameAsync(obj.Name).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _log.Warn(ex);
+                }
+            }, CommandFlags.FireAndForget);
+
+            sub.Subscribe(Client.CurrentUser.Id + "_status.stream_set", async (ch, streamData) =>
+            {
+                try
+                {
+                    var obj = new { Name = "", Url = "" };
+                    obj = JsonConvert.DeserializeAnonymousType(streamData, obj);
+                    await Client.SetGameAsync(obj.Name, obj.Url, StreamType.Twitch).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _log.Warn(ex);
+                }
+            }, CommandFlags.FireAndForget);
+        }
+
+        public Task SetGameAsync(string game)
+        {
+            var obj = new { Name = game };
+            var sub = Services.GetService<IDataCache>().Redis.GetSubscriber();
+            return sub.PublishAsync(Client.CurrentUser.Id + "_status.game_set", JsonConvert.SerializeObject(obj));
+        }
+
+        public Task SetStreamAsync(string name, string url)
+        {
+            var obj = new { Name = name, Url = url };
+            var sub = Services.GetService<IDataCache>().Redis.GetSubscriber();
+            return sub.PublishAsync(Client.CurrentUser.Id + "_status.game_set", JsonConvert.SerializeObject(obj));
         }
     }
 }

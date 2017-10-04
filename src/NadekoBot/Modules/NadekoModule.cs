@@ -5,8 +5,8 @@ using NadekoBot.Services;
 using NLog;
 using System.Globalization;
 using System.Threading.Tasks;
-using System;
 using Discord.WebSocket;
+using NadekoBot.Services.Impl;
 
 namespace NadekoBot.Modules
 {
@@ -32,7 +32,7 @@ namespace NadekoBot.Modules
             _log = LogManager.GetCurrentClassLogger();
         }
 
-        protected override void BeforeExecute()
+        protected override void BeforeExecute(CommandInfo cmd)
         {
             _cultureInfo = _localization.GetCultureInfo(Context.Guild?.Id);
         }
@@ -130,8 +130,22 @@ namespace NadekoBot.Modules
             }
         }
     }
+    
+    public abstract class NadekoTopLevelModule<TService> : NadekoTopLevelModule where TService : INService
+    {
+        public TService _service { get; set; }
+
+        public NadekoTopLevelModule(bool isTopLevel = true) : base(isTopLevel)
+        {
+        }
+    }
 
     public abstract class NadekoSubmodule : NadekoTopLevelModule
+    {
+        protected NadekoSubmodule() : base(false) { }
+    }
+
+    public abstract class NadekoSubmodule<TService> : NadekoTopLevelModule<TService> where TService : INService
     {
         protected NadekoSubmodule() : base(false)
         {

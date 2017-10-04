@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 
 namespace NadekoBot.Services
 {
-    public interface IImagesService
+    public interface IImagesService : INService
     {
         ImmutableArray<byte> Heads { get; }
         ImmutableArray<byte> Tails { get; }
@@ -17,6 +16,8 @@ namespace NadekoBot.Services
 
         ImmutableArray<byte> WifeMatrix { get; }
         ImmutableArray<byte> RategirlDot { get; }
+
+        ImmutableArray<byte> XpCard { get; }
 
         void Reload();
     }

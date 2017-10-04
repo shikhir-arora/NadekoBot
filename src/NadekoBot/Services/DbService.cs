@@ -1,39 +1,42 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using NadekoBot.Services.Database;
+using System;
+using System.IO;
+using System.Linq;
 
 namespace NadekoBot.Services
 {
     public class DbService
     {
-        private readonly DbContextOptions options;
-
-        private readonly string _connectionString;
+        private readonly DbContextOptions<NadekoContext> options;
+        private readonly DbContextOptions<NadekoContext> migrateOptions;
 
         public DbService(IBotCredentials creds)
         {
-            _connectionString = creds.Db.ConnectionString;
-            var optionsBuilder = new DbContextOptionsBuilder();
-            optionsBuilder.UseSqlite(creds.Db.ConnectionString);
+            var builder = new SqliteConnectionStringBuilder(creds.Db.ConnectionString);
+            builder.DataSource = Path.Combine(AppContext.BaseDirectory, builder.DataSource);
+            
+            var optionsBuilder = new DbContextOptionsBuilder<NadekoContext>();
+            optionsBuilder.UseSqlite(builder.ToString());
             options = optionsBuilder.Options;
-            //switch (_creds.Db.Type.ToUpperInvariant())
-            //{
-            //    case "SQLITE":
-            //        dbType = typeof(NadekoSqliteContext);
-            //        break;
-            //    //case "SQLSERVER":
-            //    //    dbType = typeof(NadekoSqlServerContext);
-            //    //    break;
-            //    default:
-            //        break;
 
-            //}
+            optionsBuilder = new DbContextOptionsBuilder<NadekoContext>();
+            optionsBuilder.UseSqlite(builder.ToString(), x => x.SuppressForeignKeyEnforcement());
+            migrateOptions = optionsBuilder.Options;
         }
 
         public NadekoContext GetDbContext()
         {
             var context = new NadekoContext(options);
+            if (context.Database.GetPendingMigrations().Any())
+            {
+                var mContext = new NadekoContext(migrateOptions);
+                mContext.Database.Migrate();
+                mContext.SaveChanges();
+                mContext.Dispose();
+            }
             context.Database.SetCommandTimeout(60);
-            context.Database.Migrate();
             context.EnsureSeedData();
 
             //set important sqlite stuffs

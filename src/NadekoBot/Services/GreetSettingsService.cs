@@ -1,7 +1,5 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using NadekoBot.DataStructures;
-using NadekoBot.DataStructures.Replacements;
 using NadekoBot.Extensions;
 using NadekoBot.Services.Database.Models;
 using NLog;
@@ -10,10 +8,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using NadekoBot.Common;
+using NadekoBot.Common.Replacements;
 
 namespace NadekoBot.Services
 {
-    public class GreetSettingsService
+    public class GreetSettingsService : INService
     {
         private readonly DbService _db;
 
@@ -139,7 +139,7 @@ namespace NadekoBot.Services
 
                     if (conf.SendDmGreetMessage)
                     {
-                        var channel = await user.CreateDMChannelAsync();
+                        var channel = await user.GetOrCreateDMChannelAsync();
 
                         if (channel != null)
                         {
@@ -154,7 +154,10 @@ namespace NadekoBot.Services
                                 {
                                     await channel.EmbedAsync(embedData.ToEmbed(), embedData.PlainText?.SanitizeMentions() ?? "").ConfigureAwait(false);
                                 }
-                                catch (Exception ex) { _log.Warn(ex); }
+                                catch (Exception ex)
+                                {
+                                    _log.Warn(ex);
+                                }
                             }
                             else
                             {

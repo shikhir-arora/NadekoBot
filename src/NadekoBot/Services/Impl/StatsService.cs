@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,7 +20,7 @@ namespace NadekoBot.Services.Impl
         private readonly IBotCredentials _creds;
         private readonly DateTime _started;
 
-        public const string BotVersion = "1.53";
+        public const string BotVersion = "1.10.2";
 
         public string Author => "Kwoth#2560";
         public string Library => "Discord.Net";
@@ -35,16 +38,17 @@ namespace NadekoBot.Services.Impl
         public long CommandsRan => Interlocked.Read(ref _commandsRan);
 
         private readonly Timer _carbonitexTimer;
+        private readonly Timer _dataTimer;
         private readonly ShardsCoordinator _sc;
 
         public int GuildCount =>
             _sc?.GuildCount ?? _client.Guilds.Count();
 
-        public StatsService(DiscordSocketClient client, CommandHandler cmdHandler, IBotCredentials creds, ShardsCoordinator sc)
+        public StatsService(DiscordSocketClient client, CommandHandler cmdHandler, IBotCredentials creds, NadekoBot nadeko)
         {
             _client = client;
             _creds = creds;
-            _sc = sc;
+            _sc = nadeko.ShardCoord;
 
             _started = DateTime.UtcNow;
             _client.MessageReceived += _ => Task.FromResult(Interlocked.Increment(ref _messageCounter));
@@ -126,7 +130,7 @@ namespace NadekoBot.Services.Impl
                 return Task.CompletedTask;
             };
 
-            if (sc != null)
+            if (_sc != null)
             {
                 _carbonitexTimer = new Timer(async (state) =>
                 {
@@ -138,7 +142,7 @@ namespace NadekoBot.Services.Impl
                         {
                             using (var content = new FormUrlEncodedContent(
                                 new Dictionary<string, string> {
-                                { "servercount", sc.GuildCount.ToString() },
+                                { "servercount", _sc.GuildCount.ToString() },
                                 { "key", _creds.CarbonKey }}))
                             {
                                 content.Headers.Clear();
@@ -153,6 +157,40 @@ namespace NadekoBot.Services.Impl
                         // ignored
                     }
                 }, null, TimeSpan.FromHours(1), TimeSpan.FromHours(1));
+
+                var platform = "other";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    platform = "linux";
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    platform = "osx";
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    platform = "windows";
+
+                _dataTimer = new Timer(async (state) =>
+                {
+                    try
+                    {
+                        using (var http = new HttpClient())
+                        {
+                            using (var content = new FormUrlEncodedContent(
+                                new Dictionary<string, string> {
+                                    { "id", string.Concat(MD5.Create().ComputeHash(Encoding.ASCII.GetBytes(_creds.ClientId.ToString())).Select(x => x.ToString("X2"))) },
+                                    { "guildCount", _sc.GuildCount.ToString() },
+                                    { "version", BotVersion },
+                                    { "platform", platform }}))
+                            {
+                                content.Headers.Clear();
+                                content.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
+
+                                await http.PostAsync("https://selfstats.nadekobot.me/", content).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                }, null, TimeSpan.FromSeconds(1), TimeSpan.FromHours(1));
             }
         }
 

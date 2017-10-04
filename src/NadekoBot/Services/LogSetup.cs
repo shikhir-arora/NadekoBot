@@ -1,11 +1,6 @@
 ﻿using NLog;
 using NLog.Config;
 using NLog.Targets;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NadekoBot.Services
 {
@@ -16,7 +11,7 @@ namespace NadekoBot.Services
             var logConfig = new LoggingConfiguration();
             var consoleTarget = new ColoredConsoleTarget()
             {
-                Layout = @"${date:format=HH\:mm\:ss} ${logger} | ${message}"
+                Layout = @"${date:format=HH\:mm\:ss} ${logger:shortName=True} | ${message}"
             };
             logConfig.AddTarget("Console", consoleTarget);
 
