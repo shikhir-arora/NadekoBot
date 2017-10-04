@@ -53,10 +53,9 @@ namespace NadekoBot.Modules.Administration
             public async Task StartupCommandAdd([Remainder] string cmdText)
             {
              
-            var x = Regex.Match(cmdText, @"^([\W]*die)(.*)"
-                ).Groups[0].Value;
+            var extractDie = Regex.Match(cmdText, @"^([\W]*die)(.*)").Groups[0].Value;
                 
-            if (x.EndsWith("die", StringComparison.OrdinalIgnoreCase)) 
+            if (extractDie.EndsWith("die", StringComparison.OrdinalIgnoreCase)) 
                 return; 
                 
                 var guser = ((IGuildUser)Context.User);
