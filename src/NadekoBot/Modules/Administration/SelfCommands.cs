@@ -52,11 +52,11 @@ namespace NadekoBot.Modules.Administration
             [OwnerOnly]
             public async Task StartupCommandAdd([Remainder] string cmdText)
             {
-             
-            var extractDie = Regex.Match(cmdText, @"^([\W]*die)(.*)").Groups[0].Value;
                 
-            if (extractDie.EndsWith("die", StringComparison.OrdinalIgnoreCase)) 
-                return; 
+                var checkDie = Regex.Match(cmdText, @"^([\W]*)(die)(.*)").Groups[2].Value;
+
+                if (checkDie.Equals("die", StringComparison.OrdinalIgnoreCase) && Regex.Match(cmdText, @"^([\W]*)(die)(.*)").Groups[3].Value.Equals(String.Empty)) 
+                    return; 
                 
                 var guser = ((IGuildUser)Context.User);
                 var cmd = new StartupCommand()
