@@ -56,7 +56,7 @@ namespace NadekoBot.Modules.Administration
             var x = Regex.Match(cmdText, @"^([\W]*die)(.*)"
                 ).Groups[0].Value;
                 
-            if (x.EndsWith("die", StringComparison.OrdinalIgnoreCase)) { 
+            if (x.EndsWith("die", StringComparison.OrdinalIgnoreCase)) 
                 return; 
                 
                 var guser = ((IGuildUser)Context.User);
